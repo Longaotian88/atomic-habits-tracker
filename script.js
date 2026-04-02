@@ -766,6 +766,96 @@ function toggleArchived() {
 }
 
 // ─── 事件监听 ─────────────────────────────────────────────────────────
+// ─── Toast 通知 ───────────────────────────────────────────────────────────────
+function showToast(message, type = 'info') {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+  toast.textContent = message;
+  toast.className = `toast ${type} show`;
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => {
+    toast.classList.remove('show');
+  }, 3000);
+}
+
+// ─── 数据导出 ────────────────────────────────────────────────────────────────
+function exportData() {
+  const NS = 'atomic_habits_';
+  const backup = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith(NS)) {
+      try {
+        backup[key] = JSON.parse(localStorage.getItem(key));
+      } catch {
+        backup[key] = localStorage.getItem(key);
+      }
+    }
+  }
+  if (Object.keys(backup).length === 0) {
+    showToast('没有可导出的数据', 'error');
+    return;
+  }
+  backup._meta = {
+    app: 'atomic-habits-tracker',
+    version: '2.0',
+    exportedAt: new Date().toISOString()
+  };
+  const json = JSON.stringify(backup, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `atomic-habits-backup-${date}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('数据导出成功！', 'success');
+}
+
+// ─── 数据导入 ────────────────────────────────────────────────────────────────
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      // Validate required structure
+      if (!data._meta || !data._meta.app !== 'atomic-habits-tracker') {
+        showToast('无效的备份文件格式', 'error');
+        return;
+      }
+      if (!confirm('导入将覆盖现有数据，确定继续？')) return;
+      // Clear existing atomic_habits_ keys
+      const NS = 'atomic_habits_';
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(NS)) keysToRemove.push(key);
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+      // Write imported data (skip _meta)
+      for (const [key, value] of Object.entries(data)) {
+        if (key === '_meta') continue;
+        localStorage.setItem(key, JSON.stringify(value));
+      }
+      // Reload state and re-render
+      loadState();
+      renderAll();
+      showToast('数据导入成功！页面已刷新。', 'success');
+    } catch (err) {
+      showToast('导入失败：文件格式错误', 'error');
+      console.warn('Import error:', err);
+    }
+  };
+  reader.onerror = function() {
+    showToast('读取文件失败', 'error');
+  };
+  reader.readAsText(file);
+}
+
+// ─── 事件监听 ─────────────────────────────────────────────────────────
 function setupEventListeners() {
   // 深色模式切换
   const darkToggle = document.getElementById('darkModeToggle');
@@ -898,6 +988,23 @@ function setupEventListeners() {
   // 键盘快捷键
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeAllModals();
+  });
+
+  // 导出数据按钮
+  document.getElementById('exportDataBtn')?.addEventListener('click', exportData);
+
+  // 导入数据按钮
+  document.getElementById('importDataBtn')?.addEventListener('click', () => {
+    document.getElementById('importFileInput')?.click();
+  });
+
+  // 隐藏的文件输入 - 选择文件后触发导入
+  document.getElementById('importFileInput')?.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      importData(file);
+      e.target.value = ''; // Reset so same file can be re-selected
+    }
   });
 }
 

@@ -82,6 +82,35 @@ button { cursor: pointer; font-family: var(--font); border: none; background: no
 }
 
 /* =====================
+   Toast 通知
+   ===================== */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--text-primary);
+  color: var(--bg);
+  padding: 12px 24px;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  z-index: 9998;
+  opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: var(--shadow-lg);
+}
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+.toast.success { background: var(--positive); color: #fff; }
+.toast.error { background: var(--negative); color: #fff; }
+.toast.info { background: var(--accent); color: #fff; }
+
+/* =====================
    页头
    ===================== */
 .header {
