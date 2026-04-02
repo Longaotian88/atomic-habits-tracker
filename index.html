@@ -9,94 +9,228 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
-
-  <!-- Toast Notification -->
+  <canvas id="confettiCanvas"></canvas>
   <div id="toast" class="toast" aria-live="polite"></div>
 
   <!-- Header -->
   <header class="header">
     <div class="container header-inner">
-      <div class="logo">
-        <span class="logo-icon">⚛️</span>
-        <span class="logo-text">原子习惯</span>
-      </div>
+      <div class="logo"><span class="logo-icon">⚛️</span><span class="logo-text">原子习惯</span></div>
       <div class="header-actions">
-        <div class="score-display">
-          <span id="dailyScore">0</span> / <span id="totalHabits">0</span>
-          <span class="score-stars" id="scoreStars"></span>
-        </div>
-        <button class="btn btn-primary btn-sm" id="addHabitBtnTop">+ 添加习惯</button>
+        <span class="score-display"><span id="dailyScore">0</span>/<span id="totalHabits">0</span> <span id="scoreStars"></span></span>
+        <button class="btn btn-ghost btn-sm" id="moreMenuBtn">☰</button>
+        <button class="btn btn-primary btn-sm" id="addHabitBtnHeader">+ 添加习惯</button>
       </div>
+    </div>
+    <div class="more-menu" id="moreMenu" style="display:none">
+      <button class="more-menu-item" id="exportBtn">📤 导出数据</button>
+      <button class="more-menu-item" id="importBtn">📥 导入数据</button>
+      <div class="more-menu-divider"></div>
+      <button class="more-menu-item" id="darkModeBtn">🌙 深色模式</button>
     </div>
   </header>
 
-  <!-- HERO TIP (Collapsible) -->
-  <section class="hero-tip" id="heroTipSection">
-    <div class="container">
+  <main class="container">
+
+    <!-- 1. Hero Tip -->
+    <section class="hero-tip" id="heroTipSection">
       <button class="hero-tip__toggle" id="heroTipToggle">
-        💡 为什么先做最小行动？
-        <span class="toggle-arrow" id="heroTipArrow">▼</span>
+        💡 为什么先做最小行动？ <span class="toggle-arrow" id="heroTipArrow">▼</span>
       </button>
       <div class="hero-tip__body" id="heroTipBody" style="display:none">
-        <p>每天 1% 的小进步，比偶尔爆发更可靠。</p>
-        <p class="cite">— James Clear《原子习惯》</p>
+        <p class="hero-tip__main">今天只要完成最小行动，就算在变好。</p>
+        <p class="hero-tip__quote">— James Clear《原子习惯》</p>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- TODAY HABITS (First Screen) -->
-  <section class="section section-today" id="todayHabitsSection">
-    <div class="container">
+    <!-- 2. Today Habits (FIRST SCREEN) -->
+    <section class="section" id="todayHabitsSection">
       <div class="section-header">
         <h2>今天要做 <span id="todayCount"></span></h2>
-        <button class="btn btn-primary btn-sm" id="addHabitBtnTop2">+ 添加习惯</button>
       </div>
-      <div id="habitsContainer"><!-- 习惯列表 --></div>
-    </div>
-  </section>
+      <div id="todayHabitsList"></div>
+    </section>
 
-  <!-- SCORECARD Moved to top header -->
+    <!-- 3. Weekly Progress -->
+    <section class="section" id="weeklyProgressSection">
+      <div class="section-header"><h2>本周进度</h2></div>
+      <div class="dashboard-cards">
+        <div class="dashboard-card dc-progress">
+          <div class="dc-label">本周完成率</div>
+          <div class="dc-ring-wrap">
+            <svg class="dc-ring-svg" viewBox="0 0 120 120" width="120" height="120">
+              <circle class="dc-ring-track" cx="60" cy="60" r="52" fill="none" stroke-width="10"/>
+              <circle class="dc-ring-fill" id="progressRing" cx="60" cy="60" r="52" fill="none" stroke-width="10" stroke-dasharray="326.73" stroke-dashoffset="326.73"/>
+            </svg>
+            <div class="dc-ring-pct" id="weeklyPct">0%</div>
+          </div>
+        </div>
+        <div class="dashboard-card dc-bars">
+          <div class="dc-label">每日完成</div>
+          <div class="weekly-bars" id="weeklyBarChart"></div>
+        </div>
+        <div class="dashboard-card dc-best">
+          <div class="dc-label">本月最佳</div>
+          <div id="bestHabitDisplay"><div class="best-habit-empty">坚持越久，这里越亮</div></div>
+        </div>
+      </div>
+    </section>
 
+    <!-- 4. Daily Reflection -->
+    <section class="section" id="reflectionSection">
+      <div class="section-header">
+        <h2>今日反思</h2>
+        <span id="reflectionDate"></span>
+      </div>
+      <div class="reflection-card" id="reflectionCard">
+        <div class="ref-row">
+          <span class="ref-label">心情</span>
+          <div class="ref-rating" id="moodRating">
+            <button class="rating-dot" data-val="1" title="很糟">😫</button>
+            <button class="rating-dot" data-val="2" title="不太好">😕</button>
+            <button class="rating-dot" data-val="3" title="一般">😐</button>
+            <button class="rating-dot" data-val="4" title="不错">🙂</button>
+            <button class="rating-dot" data-val="5" title="很棒">😊</button>
+          </div>
+        </div>
+        <div class="ref-row">
+          <span class="ref-label">精力</span>
+          <div class="ref-rating" id="energyRating">
+            <button class="rating-dot rating-num" data-val="1">1</button>
+            <button class="rating-dot rating-num" data-val="2">2</button>
+            <button class="rating-dot rating-num" data-val="3">3</button>
+            <button class="rating-dot rating-num" data-val="4">4</button>
+            <button class="rating-dot rating-num" data-val="5">5</button>
+          </div>
+        </div>
+        <div class="ref-row">
+          <span class="ref-label">卡在哪？</span>
+          <div class="obstacle-chips" id="obstacleChips">
+            <button class="chip chip-sm" data-val="太忙">太忙</button>
+            <button class="chip chip-sm" data-val="忘了">忘了</button>
+            <button class="chip chip-sm" data-val="没动力">没动力</button>
+            <button class="chip chip-sm" data-val="环境不对">环境不对</button>
+            <button class="chip chip-sm" data-val="目标太大">目标太大</button>
+          </div>
+        </div>
+        <div class="ref-row ref-row-text">
+          <span class="ref-label">✨ 今天最顺</span>
+          <textarea id="reflectionWinText" class="ref-textarea" placeholder="今天顺利的一件事……" rows="1"></textarea>
+        </div>
+        <div class="ref-row ref-row-text">
+          <span class="ref-label">📅 明天优化</span>
+          <textarea id="reflectionTomorrowText" class="ref-textarea" placeholder="明天打算怎么降低阻力……" rows="1"></textarea>
+        </div>
+        <div class="ref-row ref-row-text">
+          <span class="ref-label">📝 备注</span>
+          <textarea id="reflectionText" class="ref-textarea" placeholder="补充今天的情况（可选）……" rows="1"></textarea>
+        </div>
+        <div class="ref-saved" id="reflectionSaved"></div>
+      </div>
+    </section>
 
+    <!-- 5. Method Toolbox -->
+    <section class="section" id="toolboxSection">
+      <div class="section-header"><h2>🧰 方法工具箱</h2></div>
+      <div class="toolbox-quick" id="toolboxQuickChips">
+        <div class="chips-row">
+          <button class="chip chip-quick" data-tip="forget">😵 我总是忘</button>
+          <button class="chip chip-quick" data-tip="procrastinate">🐌 我总是拖</button>
+          <button class="chip chip-quick" data-tip="overwhelm">🔥 我总是开始太大</button>
+        </div>
+        <div class="toolbox-answer" id="toolboxAnswer"></div>
+      </div>
+      <button class="toolbox-toggle" id="toolboxToggle">
+        <span id="toolboxToggleText">遇到卡顿时再看方法</span>
+        <span class="toggle-arrow" id="toolboxToggleArrow">▼</span>
+      </button>
+      <div class="toolbox-content" id="toolboxContent" style="display:none">
+        <div class="tip-card">
+          <div class="tip-icon">🏠</div>
+          <div class="tip-content">
+            <h3>环境设计</h3>
+            <p><strong>让好习惯显而易见：</strong>把跑鞋放在门口。把书放在枕头上。在办公桌旁放一杯水。</p>
+            <p><strong>让坏习惯看不见：</strong>把手机藏进抽屉。把垃圾食品从桌上拿走。</p>
+          </div>
+        </div>
+        <div class="tip-card">
+          <div class="tip-icon">🔄</div>
+          <div class="tip-content">
+            <h3>习惯循环</h3>
+            <p>每个习惯都遵循这个循环：<strong>提示 → 渴望 → 反应 → 奖励</strong></p>
+            <p>识别每个部分，就能诊断和设计好习惯。</p>
+          </div>
+        </div>
+        <div class="tip-card">
+          <div class="tip-icon">🎯</div>
+          <div class="tip-content">
+            <h3>微习惯方法</h3>
+            <p>把目标缩小到荒谬。1个俯卧撑、读1页书、走1分钟。成功后往往停不下来。</p>
+          </div>
+        </div>
+        <div class="tip-card">
+          <div class="tip-icon">💬</div>
+          <div class="tip-content">
+            <h3>身份认同</h3>
+            <p>习惯的最高层次是身份。"我是那种每天阅读的人"比"我要多读书"更有力量。</p>
+          </div>
+        </div>
+      </div>
+    </section>
 
-  <!-- Modals -->
+    <!-- 6. Identity -->
+    <section class="section" id="identitySection">
+      <div class="section-header">
+        <h2>🪪 身份认同</h2>
+        <button class="btn btn-secondary btn-sm" id="addIdentityBtn">+ 添加身份</button>
+      </div>
+      <div id="identityGrid"></div>
+    </section>
+
+    <!-- 7. Stacks -->
+    <section class="section" id="stackSection">
+      <div class="section-header">
+        <h2>🔗 习惯堆叠</h2>
+        <button class="btn btn-secondary btn-sm" id="addStackBtn">+ 添加堆叠</button>
+      </div>
+      <div id="stacksGrid"></div>
+    </section>
+
+    <!-- 8. Archived -->
+    <section class="section" id="archivedSection">
+      <button class="archived-toggle" id="toggleArchivedBtn">
+        <span>📦 已归档习惯</span>
+        <span id="archivedCount"></span>
+        <span class="toggle-arrow" id="archivedArrow">▶</span>
+      </button>
+      <div id="archivedContent" style="display:none">
+        <div id="archivedGrid"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ─── MODALS ─────────────────────────────── -->
+
   <!-- Add Habit Modal -->
   <div class="modal" id="habitModal">
     <div class="modal-backdrop"></div>
     <div class="modal-box">
       <div class="modal-header">
         <h3>添加新习惯</h3>
-        <button class="btn-icon modal-close">&times;</button>
+        <button class="btn-icon modal-close">×</button>
       </div>
       <div class="habit-tip-box">
         <span class="habit-tip-icon">💡</span>
-        <span class="habit-tip-text" id="habitTipText">先写'什么时候开始'，再写'做到什么算完成'，这样最容易坚持。</span>
+        <span class="habit-tip-text">先写"什么时候开始"，再写"做到什么算完成"，这样最容易坚持。</span>
       </div>
       <form id="habitForm">
-        <!-- Basic fields: always visible -->
-        <div class="form-group form-group--name">
+        <div class="form-group">
           <label for="habitName">习惯名称</label>
           <input type="text" id="habitName" placeholder="例如：晨跑、读书、冥想" required>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="habitTarget">目标频率</label>
-            <select id="habitTarget">
-              <option value="7">每天</option>
-              <option value="5">每周5次</option>
-              <option value="3">每周3次</option>
-              <option value="1">每周1次</option>
-              <option value="custom">自定义</option>
-            </select>
-          </div>
-        </div>
-        <!-- Custom frequency input (shown when 自定义 selected) -->
-        <div class="form-group custom-freq-group" id="customFreqGroup" style="display:none">
-          <label for="customFreqInput">自定义频率</label>
-          <input type="text" id="customFreqInput" placeholder="例如：每周4次，或 指定周一/三/五">
-        </div>
         <div class="form-group">
-          <label for="habitCue">提示（什么时候开始）</label>
+          <label for="habitCue">什么时候开始？</label>
           <div class="preset-chips" id="cueChips">
             <button type="button" class="chip" data-val="起床后">起床后</button>
             <button type="button" class="chip" data-val="洗漱后">洗漱后</button>
@@ -104,55 +238,59 @@
             <button type="button" class="chip" data-val="下班后">下班后</button>
             <button type="button" class="chip" data-val="睡前">睡前</button>
           </div>
-          <input type="text" id="habitCue" placeholder="例如：洗漱完后 / 坐到书桌前 / 晚饭后">
+          <input type="text" id="habitCue" placeholder="例如：洗漱完后、坐到书桌前、晚饭后">
         </div>
         <div class="form-group">
-          <label for="habitTinyAction">最小行动 <span class="label-sub">做到什么程度就算完成</span></label>
+          <label for="habitTinyAction">做到什么算完成？</label>
           <div class="preset-chips" id="tinyActionChips">
             <button type="button" class="chip" data-val="读1页">读1页</button>
             <button type="button" class="chip" data-val="写1句话">写1句话</button>
             <button type="button" class="chip" data-val="做1个俯卧撑">做1个俯卧撑</button>
             <button type="button" class="chip" data-val="走5分钟">走5分钟</button>
           </div>
-          <input type="text" id="habitTinyAction" placeholder="例如：阅读2页 / 写1句话 / 走路5分钟">
+          <input type="text" id="habitTinyAction" placeholder="例如：阅读2页、写1句话、走路5分钟">
         </div>
-
-        <!-- Habit preview sentence -->
         <div class="habit-preview" id="habitPreview">
           <div class="habit-preview__icon">⚛️</div>
           <div class="habit-preview__text" id="habitPreviewText"></div>
         </div>
-
-        <!-- Advanced toggle -->
+        <div class="form-group">
+          <label for="habitTarget">多久做一次？</label>
+          <select id="habitTarget">
+            <option value="7">每天</option>
+            <option value="5">每周5次</option>
+            <option value="3">每周3次</option>
+            <option value="1">每周1次</option>
+            <option value="custom">自定义</option>
+          </select>
+        </div>
+        <div class="form-group custom-freq-group" id="customFreqGroup" style="display:none">
+          <label for="customFreqInput">自定义频率</label>
+          <input type="text" id="customFreqInput" placeholder="例如：每周4次，或 指定周一/三/五">
+        </div>
         <button type="button" class="advanced-toggle" id="advancedToggle">
-          <span id="advancedToggleText">展开高级设置</span>
+          <span id="advancedToggleText">展开更多设置</span>
           <span class="advanced-toggle__arrow" id="advancedToggleArrow">▼</span>
         </button>
-
-        <!-- Advanced fields: hidden by default -->
         <div class="advanced-section" id="advancedSection">
           <div class="form-group">
-            <label for="habitIdentitySelect">这条习惯服务于哪个身份？</label>
-            <select id="habitIdentitySelect">
-              <option value="">— 不关联身份 —</option>
-            </select>
+            <label for="habitIdentitySelect">服务于哪个身份？</label>
+            <select id="habitIdentitySelect"><option value="">— 不关联身份 —</option></select>
           </div>
           <div class="form-group">
-            <label for="habitStackSelect">这条习惯挂靠在哪个旧习惯后面？</label>
-            <select id="habitStackSelect">
-              <option value="">— 不关联堆叠 —</option>
-            </select>
+            <label for="habitStackSelect">挂靠哪个旧习惯后面？</label>
+            <select id="habitStackSelect"><option value="">— 不关联堆叠 —</option></select>
           </div>
           <div class="form-group">
-            <label for="habitMotivation">我为什么想做这件事</label>
-            <input type="text" id="habitMotivation" placeholder="例如：我想更平静 / 想每天有进步感 / 想减少拖延">
+            <label for="habitMotivation">为什么想做这件事？</label>
+            <input type="text" id="habitMotivation" placeholder="例如：我想更平静、想每天有进步感">
           </div>
           <div class="form-group">
-            <label for="habitInstantReward">即时奖励（完成后立刻感受到什么）</label>
-            <input type="text" id="habitInstantReward" placeholder="例如：打个勾很有成就感 / 感觉今天没白过 / 放松一下">
+            <label for="habitInstantReward">完成后立刻感受到什么？</label>
+            <input type="text" id="habitInstantReward" placeholder="例如：打个勾很有成就感、感觉今天没白过">
           </div>
           <div class="form-group">
-            <label for="habitDesc">描述 / 备注</label>
+            <label for="habitDesc">备注</label>
             <textarea id="habitDesc" placeholder="补充说明（可选）" rows="2"></textarea>
           </div>
           <div class="form-group">
@@ -168,7 +306,6 @@
             </div>
           </div>
         </div>
-
         <div class="form-actions">
           <button type="button" class="btn btn-secondary modal-close">取消</button>
           <button type="submit" class="btn btn-primary">添加习惯</button>
@@ -181,17 +318,14 @@
   <div class="modal" id="identityModal">
     <div class="modal-backdrop"></div>
     <div class="modal-box">
-      <div class="modal-header">
-        <h3>添加身份习惯</h3>
-        <button class="btn-icon modal-close">&times;</button>
-      </div>
+      <div class="modal-header"><h3>添加身份认同</h3><button class="btn-icon modal-close">×</button></div>
       <form id="identityForm">
         <div class="form-group">
-          <label>身份宣言</label>
-          <input type="text" id="identityText" placeholder='例如："我是一名跑者"' required>
+          <label for="identityText">身份宣言</label>
+          <input type="text" id="identityText" placeholder='例如："我是一名持续学习的人"' required>
         </div>
         <div class="form-group">
-          <label>为什么这对你很重要？</label>
+          <label for="identityWhy">为什么这对你很重要？</label>
           <textarea id="identityWhy" placeholder="理由……" rows="3"></textarea>
         </div>
         <div class="form-actions">
@@ -206,33 +340,26 @@
   <div class="modal" id="stackModal">
     <div class="modal-backdrop"></div>
     <div class="modal-box">
-      <div class="modal-header">
-        <h3>添加习惯堆叠</h3>
-        <button class="btn-icon modal-close">&times;</button>
-      </div>
+      <div class="modal-header"><h3>添加习惯堆叠</h3><button class="btn-icon modal-close">×</button></div>
       <form id="stackForm">
         <div class="form-group">
-          <label>锚点（我已经做的事）</label>
+          <label for="stackAnchor">锚点（我已经做的事）</label>
           <input type="text" id="stackAnchor" placeholder="例如：在我倒完早咖啡之后" required>
         </div>
         <div class="form-group">
-          <label>新习惯（我要做的事）</label>
+          <label for="stackNew">新习惯（我要做的事）</label>
           <input type="text" id="stackNew" placeholder="例如：我将写日记" required>
         </div>
         <div class="form-group">
-          <label>关联习惯 <span class="label-sub">将此堆叠关联到哪个习惯</span></label>
-          <select id="stackHabitId">
-            <option value="">（不关联）</option>
-          </select>
+          <label for="stackHabitId">关联习惯（可选）</label>
+          <select id="stackHabitId"><option value="">（不关联）</option></select>
         </div>
         <div class="form-group">
-          <label>关联身份 <span class="label-sub">将此堆叠关联到哪个身份</span></label>
-          <select id="stackIdentityId">
-            <option value="">（不关联）</option>
-          </select>
+          <label for="stackIdentityId">关联身份（可选）</label>
+          <select id="stackIdentityId"><option value="">（不关联）</option></select>
         </div>
         <div class="form-group">
-          <label>小提示（可选）</label>
+          <label for="stackCue">提示（可选）</label>
           <input type="text" id="stackCue" placeholder="例如：把笔放在咖啡机旁边">
         </div>
         <div class="form-actions">
@@ -243,40 +370,38 @@
     </div>
   </div>
 
-  <!-- Edit Habit Loop Modal (used for both edit and inline expand) -->
+  <!-- Edit Loop Modal -->
   <div class="modal" id="loopModal">
     <div class="modal-backdrop"></div>
     <div class="modal-box">
-      <div class="modal-header">
-        <h3 id="loopModalTitle">编辑习惯循环</h3>
-        <button class="btn-icon modal-close">&times;</button>
-      </div>
+      <div class="modal-header"><h3>编辑习惯循环</h3><button class="btn-icon modal-close">×</button></div>
       <form id="loopForm">
         <input type="hidden" id="loopHabitId">
         <div class="form-group">
-          <label>提示（触发）</label>
+          <label for="loopCue">提示（触发）</label>
           <input type="text" id="loopCue" placeholder="什么触发了这个习惯？">
         </div>
         <div class="form-group">
-          <label>渴望（动机）</label>
+          <label for="loopCraving">渴望（动机）</label>
           <input type="text" id="loopCraving" placeholder="你渴望什么？">
         </div>
         <div class="form-group">
-          <label>反应（行动）</label>
+          <label for="loopResponse">反应（行动）</label>
           <input type="text" id="loopResponse" placeholder="你实际上做什么？">
         </div>
         <div class="form-group">
-          <label>即时奖励（完成后立刻感受到什么）</label>
-          <input type="text" id="loopReward" placeholder="你得到什么益处？">
+          <label for="loopReward">即时奖励</label>
+          <input type="text" id="loopReward" placeholder="完成后立刻感受到什么？">
         </div>
         <div class="form-actions">
           <button type="button" class="btn btn-secondary modal-close">取消</button>
-          <button type="submit" class="btn btn-primary">保存循环</button>
+          <button type="submit" class="btn btn-primary">保存</button>
         </div>
       </form>
     </div>
   </div>
 
+  <input type="file" id="importFileInput" accept=".json" style="display:none">
   <script src="script.js"></script>
 </body>
 </html>

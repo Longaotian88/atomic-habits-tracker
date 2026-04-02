@@ -1,1406 +1,749 @@
-/* =====================
-   原子习惯追踪器 - JS (增强版)
-   ===================== */
+// Atomic Habits Tracker v5
+'use strict';
 
-// ─── 状态 ────────────────────────────────────────────────────────────────────
-let state = {
-  habits: [],       // { id, name, desc, target, color, cue, craving, response, reward, createdAt, archived, customFreq, linkedIdentityId, linkedStackId }
-  completions: {},  // { 'YYYY-MM-DD': [habitId, ...] }
-  identities: [],   // { id, text, why }
-  stacks: []        // { id, anchor, newHabit, cue, habitId, identityId }
-};
-
-const LS_KEY = 'atomic_habits_v2';
-const REFLECTION_KEY = 'atomic_habits_reflection_v2';
-
-// Motivational quotes
-const MOTIVATIONAL_QUOTES = [
-  { quote: "习惯是自我改善的复利。每天进步1%，一年后将提升37倍。", author: "詹姆斯·克利尔" },
-  { quote: "你应该是更关心你现在的轨迹，而不是你现在的结果。", author: "詹姆斯·克利尔" },
-  { quote: "习惯的养成不在于时间的长短，而在于重复的次数。", author: "BJ·福格" },
-  { quote: "成功的反面不是失败，而是从未尝试。", author: "西奥多·罗斯福" },
-  { quote: "不要等到明天，明天未必会来。现在就开始。", author: "非洲谚语" },
-  { quote: "你不需要很厉害才开始，你需要开始才会很厉害。", author: "匿名" },
-  { quote: "每一个大习惯都是由无数个小习惯组成的。", author: "原子习惯" },
-  { quote: "让好习惯显而易见，让坏习惯看不见。", author: "詹姆斯·克利尔" }
+var HABIT_KEY = 'atomic_habits_v2';
+var REFLECTION_KEY = 'ah_reflection_v3';
+var MILESTONES = [
+  { days: 3, icon: '🌱', label: '3天', sub: '好的开始！继续加油！' },
+  { days: 7, icon: '🔥', label: '7天', sub: '一周连续！习惯在形成！' },
+  { days: 21, icon: '⚡', label: '21天', sub: '三周！身体开始记住它！' },
+  { days: 30, icon: '🏆', label: '30天', sub: '一个月！真正的里程碑！' },
+  { days: 66, icon: '💎', label: '66天', sub: '两个月！身份在改变！' },
+  { days: 100, icon: '🚀', label: '100天', sub: '百日！你是榜样！' },
+  { days: 365, icon: '👑', label: '365天', sub: '一年！传奇！' },
+];
+var QUICK_EXAMPLES = [
+  { name: '读书', cue: '睡前', tinyAction: '读1页', color: '#3b82f6' },
+  { name: '俯卧撑', cue: '起床后', tinyAction: '做1个俯卧撑', color: '#f97316' },
+  { name: '走路', cue: '下班后', tinyAction: '走5分钟', color: '#10b981' },
 ];
 
-// Example habits for empty state
-const QUICK_EXAMPLE_HABITS = [
-  { name: '阅读1页', cue: '睡前', tinyAction: '读1页', color: '#3b82f6' },
-  { name: '写1句话', cue: '起床后', tinyAction: '写1句话', color: '#8b5cf6' },
-  { name: '走路5分钟', cue: '下班后', tinyAction: '走5分钟', color: '#10b981' }
-];
-
-// Milestone data
-const MILESTONES = [
-  { days: 7, icon: '🎖️', label: '7天里程碑', sub: '初步习惯已形成，继续加油！' },
-  { days: 21, icon: '🏅', label: '21天里程碑', sub: '21天养成习惯，你做到了！' },
-  { days: 66, icon: '🏆', label: '66天里程碑', sub: '66天 = 真正的习惯养成！' },
-  { days: 100, icon: '👑', label: '100天里程碑', sub: '百日坚持，卓越非凡！' }
-];
-
-// Reflection questions
-const REFLECTION_QUESTIONS = {
-  good: [
-    "是什么让今天这么顺利？",
-    "哪个习惯最容易完成？",
-    "明天如何保持这个好状态？"
-  ],
-  hard: [
-    "哪里遇到了阻力？",
-    "是什么打断了你的习惯？",
-    "明天可以怎么调整？"
-  ]
-};
-
-// Habit tips pool
-const HABIT_TIPS = [
-  '先写\'什么时候开始\'，再写\'做到什么算完成\'，这样最容易坚持。',
-  '从极小的行为开始（1个俯卧撑！），让阻力接近零。',
-  '给每个习惯完成后立即庆祝，大脑会记住这个快乐的关联！',
-  '把手机放到另一个房间，减少干扰，提升专注力。',
-  '习惯堆叠 = "在 [旧习惯] 之后，我将 [新习惯]"，利用已有习惯带动新习惯。',
-  '睡前把第二天要用的东西（运动服、书本）准备好，减少启动阻力。',
-  '让好习惯显而易见——把跑鞋放在门口，把书放在枕头边。',
-  '连续做7天就会形成初步习惯，别打断链条！🔥',
-  '每晚睡前回顾：今天哪个习惯做得最好？明天如何改进？'
-];
-
-// ─── 初始化 ────────────────────────────────────────────────────────────────────
-function init() {
-  loadState();
-  renderAll();
-  animateCompoundBars();
-  setupEventListeners();
-  updateTodayDate();
-  loadReflection();
-  renderQuotes();
-}
-
-function renderQuotes() {
-  const grid = document.getElementById('quotesGrid');
-  if (!grid) return;
-  // Shuffle and pick 4
-  const shuffled = [...MOTIVATIONAL_QUOTES].sort(() => Math.random() - 0.5);
-  const selected = shuffled.slice(0, 4);
-  grid.innerHTML = selected.map(q => `
-    <div class="quote-card">
-      <p>${q.quote}</p>
-      <div class="quote-author">— ${q.author}</div>
-    </div>
-  `).join('');
-}
-
-// ─── 存储 ─────────────────────────────────────────────────────────────────
-function loadState() {
-  try {
-    const saved = localStorage.getItem(LS_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed.habits && !parsed.habits[0]?.hasOwnProperty('archived')) {
-        parsed.habits = parsed.habits.map(h => ({ ...h, archived: false }));
-      }
-      state = parsed;
-    }
-  } catch (e) { console.warn('状态加载失败', e); }
-}
-
-function saveState() {
-  try {
-    localStorage.setItem(LS_KEY, JSON.stringify(state));
-  } catch (e) { console.warn('状态保存失败', e); }
-}
-
-// ─── 辅助函数 ─────────────────────────────────────────────────────────────────
-function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-}
+var state = { habits: [], completions: {}, identities: [], stacks: [], settings: {} };
 
 function today() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
+function generateId() { return 'h_' + Date.now() + '_' + Math.random().toString(36).substr(2,6); }
+function getActiveHabits() { return state.habits.filter(function(h) { return !h.archived; }); }
+function isCompleted(id) { return (state.completions[today()] || []).indexOf(id) >= 0; }
 
-function updateTodayDate() {
-  const el = document.getElementById('todayDate');
-  if (el) {
-    const d = new Date();
-    el.textContent = d.toLocaleDateString('zh-CN', { weekday: 'long', month: 'long', day: 'numeric' });
-  }
-}
-
-function isCompleted(habitId) {
-  const d = today();
-  return (state.completions[d] || []).includes(habitId);
-}
-
-function getStreak(habitId) {
-  let streak = 0;
-  const d = new Date();
-  while (true) {
-    const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    if ((state.completions[dateStr] || []).includes(habitId)) {
-      streak++;
-      d.setDate(d.getDate() - 1);
-    } else {
-      break;
-    }
-  }
-  return streak;
-}
-
-function getLast30Days(habitId) {
-  const days = [];
-  const d = new Date();
-  for (let i = 29; i >= 0; i--) {
-    const dd = new Date(d);
-    dd.setDate(dd.getDate() - i);
-    const dateStr = `${dd.getFullYear()}-${String(dd.getMonth()+1).padStart(2,'0')}-${String(dd.getDate()).padStart(2,'0')}`;
-    const isToday = dateStr === today();
-    days.push({
-      date: dateStr,
-      completed: (state.completions[dateStr] || []).includes(habitId),
-      isToday
-    });
+function getStreak(id) {
+  var days = 0, date = new Date();
+  for (var i = 0; i < 365; i++) {
+    var k = date.toISOString().slice(0,10);
+    if ((state.completions[k] || []).indexOf(id) >= 0) { days++; date.setDate(date.getDate()-1); }
+    else break;
   }
   return days;
 }
 
-function scoreStars(completed, total) {
-  if (total === 0) return '—';
-  const pct = completed / total;
-  if (pct >= 1) return '🌟🌟🌟';
-  if (pct >= 0.6) return '🌟🌟';
-  if (pct >= 0.3) return '🌟';
+function getThisWeekDays() {
+  var now = new Date(), dow = now.getDay() || 7, days = [];
+  for (var i = 1; i <= 7; i++) {
+    var d = new Date(now); d.setDate(d.getDate() - (dow - i));
+    days.push({ dateStr: d.toISOString().slice(0,10), label: ['一','二','三','四','五','六','日'][i-1], isToday: d.toISOString().slice(0,10) === today() });
+  }
+  return days;
+}
+
+function getWeeklyRate() {
+  var active = getActiveHabits();
+  if (!active.length) return 0;
+  var week = getThisWeekDays(), total = 0, filled = 0;
+  week.forEach(function(d) {
+    total += active.length;
+    filled += (state.completions[d.dateStr] || []).filter(function(id) { return active.some(function(h) { return h.id === id; }); }).length;
+  });
+  return total > 0 ? Math.round((filled / total) * 100) : 0;
+}
+
+function getMonthlyBest() {
+  var active = getActiveHabits();
+  if (!active.length) return null;
+  var now = new Date(), monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10);
+  var best = null, bestStreak = 0;
+  active.forEach(function(h) {
+    var s = 0, date = new Date();
+    for (var i = 0; i < 100; i++) {
+      var k = date.toISOString().slice(0,10);
+      if (k < monthStart) break;
+      if ((state.completions[k] || []).indexOf(h.id) >= 0) { s++; date.setDate(date.getDate()-1); }
+      else break;
+    }
+    if (s > bestStreak) { bestStreak = s; best = h; }
+  });
+  return bestStreak >= 3 ? best : null;
+}
+
+function scoreStars(done, total) {
+  if (!total) return '';
+  var p = done / total;
+  if (p === 1) return '💯';
+  if (p >= 0.75) return '😊';
+  if (p >= 0.5) return '🙂';
+  if (p >= 0.25) return '😐';
   return '';
 }
 
-function getActiveHabits() {
-  return state.habits.filter(h => !h.archived);
+function getHabitStatus(habit) {
+  var done = isCompleted(habit.id);
+  if (done) return { label: '✅ 今天完成', status: 'done' };
+  var target = habit.target || 7;
+  if (target >= 7) return { label: '📋 今天该做', status: 'due' };
+  var week = getThisWeekDays();
+  var weekDone = week.filter(function(d) { return (state.completions[d.dateStr] || []).indexOf(habit.id) >= 0; }).length;
+  var remaining = target - weekDone;
+  if (remaining <= 0) return { label: '✅ 本周已完成', status: 'done' };
+  return { label: '📋 本周还差' + remaining + '次', status: 'due' };
 }
 
-function getArchivedHabits() {
-  return state.habits.filter(h => h.archived);
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ─── 每日反思 v2 ──────────────────────────────────────────────────────────
-function loadReflection() {
-  const key = REFLECTION_KEY + '_' + today();
-  const saved = localStorage.getItem(key);
-  const savedEl = document.getElementById('reflectionSaved');
-  if (saved) {
+function saveState() { try { localStorage.setItem(HABIT_KEY, JSON.stringify(state)); } catch(e) {} }
+function loadState() {
+  try {
+    var s = localStorage.getItem(HABIT_KEY);
+    if (s) { state = JSON.parse(s); if (Array.isArray(state.completions)) state.completions = {}; }
+  } catch(e) {}
+}
+
+function exportData() {
+  var blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'atomic-habits-backup-' + today() + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('📤 已导出');
+}
+
+function importData() { document.getElementById('importFileInput').click(); }
+document.getElementById('importFileInput').addEventListener('change', function(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
     try {
-      const data = JSON.parse(saved);
-      if (data.mood) {
-        const d = document.querySelector('#moodRating .rating-dot[data-val="' + data.mood + '"]');
-        if (d) d.classList.add('selected');
+      var data = JSON.parse(ev.target.result);
+      if (confirm('导入将覆盖当前所有数据，确定继续？')) {
+        state = data; saveState(); renderAll(); showToast('📥 导入成功');
       }
-      if (data.energy) {
-        const d = document.querySelector('#energyRating .rating-dot[data-val="' + data.energy + '"]');
-        if (d) d.classList.add('selected');
-      }
-      if (data.obstacles && Array.isArray(data.obstacles)) {
-        data.obstacles.forEach(obs => {
-          const c = document.querySelector('#obstacleChips .chip-sm[data-val="' + obs + '"]');
-          if (c) c.classList.add('selected');
-        });
-      }
-      const t = document.getElementById('reflectionText');
-      if (t && data.text) t.value = data.text;
-      if (savedEl) savedEl.textContent = '✓ 已保存';
-    } catch(e) {}
-  }
+    } catch(err) { showToast('❌ 导入失败'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+function showToast(msg, dur) {
+  dur = dur || 2500;
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, dur);
 }
 
-function saveReflection() {
-  const mood = document.querySelector('#moodRating .rating-dot.selected')?.dataset.val || 0;
-  const energy = document.querySelector('#energyRating .rating-dot.selected')?.dataset.val || 0;
-  const obstacles = Array.from(document.querySelectorAll('#obstacleChips .chip-sm.selected')).map(c => c.dataset.val);
-  const text = document.getElementById('reflectionText')?.value.trim() || '';
-  const savedEl = document.getElementById('reflectionSaved');
-  const data = { mood, energy, obstacles, text, savedAt: new Date().toISOString() };
-  localStorage.setItem(REFLECTION_KEY + '_' + today(), JSON.stringify(data));
-  if (savedEl) { savedEl.textContent = '✓ 已保存'; setTimeout(() => { if (savedEl) savedEl.textContent = ''; }, 2000); }
+function showCompletionToast(msg) {
+  var old = document.querySelector('.toast-complete');
+  if (old) old.remove();
+  var t = document.createElement('div');
+  t.className = 'toast-complete';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(function() {
+    t.classList.add('toast-show');
+    setTimeout(function() {
+      t.classList.remove('toast-show');
+      setTimeout(function() { t.remove(); }, 400);
+    }, 2200);
+  });
 }
 
+function openModal(id) { var m = document.getElementById(id); if (m) m.classList.add('open'); }
+function closeModals() { document.querySelectorAll('.modal.open').forEach(function(m) { m.classList.remove('open'); }); }
 document.addEventListener('click', function(e) {
-  const dot = e.target.closest('.rating-dot');
-  if (dot && dot.closest('.reflect-rating')) {
-    dot.closest('.reflect-rating').querySelectorAll('.rating-dot').forEach(d => d.classList.remove('selected'));
+  if (e.target.classList.contains('modal-backdrop')) closeModals();
+  if (e.target.classList.contains('modal-close')) closeModals();
+});
+
+// Header buttons
+document.getElementById('moreMenuBtn').addEventListener('click', function(e) {
+  e.stopPropagation();
+  var m = document.getElementById('moreMenu');
+  m.style.display = m.style.display === 'none' ? 'block' : 'none';
+});
+document.addEventListener('click', function() {
+  var m = document.getElementById('moreMenu');
+  if (m) m.style.display = 'none';
+});
+document.getElementById('exportBtn').addEventListener('click', exportData);
+document.getElementById('importBtn').addEventListener('click', importData);
+document.getElementById('darkModeBtn').addEventListener('click', function() {
+  var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  state.settings.darkMode = next; saveState();
+  this.textContent = next === 'dark' ? '☀️ 浅色模式' : '🌙 深色模式';
+});
+var addHdrBtn = document.getElementById('addHabitBtnHeader');
+if (addHdrBtn) addHdrBtn.addEventListener('click', function() { openModal('habitModal'); populateHabitModalDropdowns(); resetHabitForm(); });
+var addTop2Btn = document.getElementById('addHabitBtnTop2');
+if (addTop2Btn) addTop2Btn.addEventListener('click', function() { openModal('habitModal'); populateHabitModalDropdowns(); resetHabitForm(); });
+var addIdBtn = document.getElementById('addIdentityBtn');
+if (addIdBtn) addIdBtn.addEventListener('click', function() { openModal('identityModal'); });
+var addStkBtn = document.getElementById('addStackBtn');
+if (addStkBtn) addStkBtn.addEventListener('click', function() { openModal('stackModal'); populateStackModalSelects(); });
+
+// Hero tip toggle
+document.getElementById('heroTipToggle').addEventListener('click', function() {
+  var body = document.getElementById('heroTipBody');
+  var arrow = document.getElementById('heroTipArrow');
+  var isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  arrow.textContent = isOpen ? '▼' : '▲';
+});
+
+// Toolbox toggle
+var toolboxOpen = false;
+document.getElementById('toolboxToggle').addEventListener('click', function() {
+  toolboxOpen = !toolboxOpen;
+  document.getElementById('toolboxContent').style.display = toolboxOpen ? 'block' : 'none';
+  document.getElementById('toolboxToggleArrow').textContent = toolboxOpen ? '▲' : '▼';
+  document.getElementById('toolboxToggleText').textContent = toolboxOpen ? '收起方法' : '遇到卡顿时再看方法';
+});
+
+// Toolbox quick chips
+document.getElementById('toolboxQuickChips').addEventListener('click', function(e) {
+  var chip = e.target.closest('.chip-quick');
+  if (!chip) return;
+  var tip = chip.dataset.tip;
+  var answers = {
+    forget: '<strong>我总是忘</strong>：把习惯绑定到已有习惯后面，如"洗完脸后 → 读1页书"。触发上下文越具体，越不需要意志力。',
+    procrastinate: '<strong>我总是拖</strong>：用"2分钟规则"。告诉自己"只做2分钟就好"。最难的是开始，一旦开始往往停不下来。',
+    overwhelm: '<strong>我总是开始太大</strong>：把目标缩小到荒谬。1个俯卧撑、读1行、走1分钟。小到不可能失败，然后慢慢加。'
+  };
+  document.getElementById('toolboxAnswer').innerHTML = answers[tip] || '';
+});
+
+// Archived toggle
+document.getElementById('toggleArchivedBtn').addEventListener('click', function() {
+  var content = document.getElementById('archivedContent');
+  var arrow = document.getElementById('archivedArrow');
+  var isOpen = content.style.display !== 'none';
+  content.style.display = isOpen ? 'none' : 'block';
+  arrow.textContent = isOpen ? '▶' : '▼';
+});
+
+// ─── Reflection ────────────────────────────────────────────────────────────
+function saveReflection() {
+  var moodDot = document.querySelector('#moodRating .rating-dot.selected');
+  var energyDot = document.querySelector('#energyRating .rating-dot.selected');
+  var mood = moodDot && moodDot.dataset && moodDot.dataset.val || 0;
+  var energy = energyDot && energyDot.dataset && energyDot.dataset.val || 0;
+  var obstacles = [];
+  document.querySelectorAll('#obstacleChips .chip-sm.selected').forEach(function(c) { obstacles.push(c.dataset.val); });
+  var win = (document.getElementById('reflectionWinText') || {}).value.trim() || '';
+  var tomorrow = (document.getElementById('reflectionTomorrowText') || {}).value.trim() || '';
+  var text = (document.getElementById('reflectionText') || {}).value.trim() || '';
+  var savedEl = document.getElementById('reflectionSaved');
+  var data = { mood: mood, energy: energy, obstacles: obstacles, win: win, tomorrow: tomorrow, text: text, savedAt: new Date().toISOString() };
+  localStorage.setItem(REFLECTION_KEY + '_' + today(), JSON.stringify(data));
+  if (savedEl) { savedEl.textContent = '✓ 已保存'; setTimeout(function() { if (savedEl) savedEl.textContent = ''; }, 2000); }
+}
+
+function loadReflection() {
+  var key = REFLECTION_KEY + '_' + today();
+  var saved = localStorage.getItem(key);
+  if (!saved) return;
+  try {
+    var data = JSON.parse(saved);
+    if (data.mood) { var d = document.querySelector('#moodRating .rating-dot[data-val="' + data.mood + '"]'); if (d) d.classList.add('selected'); }
+    if (data.energy) { var d = document.querySelector('#energyRating .rating-dot[data-val="' + data.energy + '"]'); if (d) d.classList.add('selected'); }
+    if (data.obstacles && Array.isArray(data.obstacles)) {
+      data.obstacles.forEach(function(obs) { var c = document.querySelector('#obstacleChips .chip-sm[data-val="' + obs + '"]'); if (c) c.classList.add('selected'); });
+    }
+    var winEl = document.getElementById('reflectionWinText');
+    if (winEl && data.win) winEl.value = data.win;
+    var tomEl = document.getElementById('reflectionTomorrowText');
+    if (tomEl && data.tomorrow) tomEl.value = data.tomorrow;
+    var textEl = document.getElementById('reflectionText');
+    if (textEl && data.text) textEl.value = data.text;
+    var savedEl = document.getElementById('reflectionSaved');
+    if (savedEl) savedEl.textContent = '✓ 已保存';
+  } catch(e) {}
+}
+
+// Reflection event listeners
+document.addEventListener('click', function(e) {
+  var dot = e.target.closest('.rating-dot');
+  if (dot && dot.closest('.ref-rating')) {
+    dot.closest('.ref-rating').querySelectorAll('.rating-dot').forEach(function(d) { d.classList.remove('selected'); });
     dot.classList.add('selected');
     saveReflection();
   }
-  const chip = e.target.closest('.obstacle-chips .chip-sm');
+  var chip = e.target.closest('.obstacle-chips .chip-sm');
   if (chip) { chip.classList.toggle('selected'); saveReflection(); }
 });
+var reflWin = document.getElementById('reflectionWinText');
+if (reflWin) reflWin.addEventListener('input', saveReflection);
+var reflTom = document.getElementById('reflectionTomorrowText');
+if (reflTom) reflTom.addEventListener('input', saveReflection);
+var reflTxt = document.getElementById('reflectionText');
+if (reflTxt) reflTxt.addEventListener('input', saveReflection);
 
-// ─── 进度仪表盘 ───────────────────────────────────────────────────────────
-function getWeekDays() {
-  const days = [];
-  const now = new Date();
-  const dayOfWeek = now.getDay() || 7;
-  for (let i = 1; i <= dayOfWeek; i++) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - (dayOfWeek - i));
-    const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    const label = d.toLocaleDateString('zh-CN', { weekday: 'short', day: 'numeric' });
-    const isToday = dateStr === today();
-    const completedCount = getActiveHabits().filter(h => (state.completions[dateStr] || []).includes(h.id)).length;
-    const totalCount = getActiveHabits().length;
-    const pct = totalCount > 0 ? completedCount / totalCount : 0;
-    days.push({ dateStr, label, completedCount, totalCount, pct, isToday });
-  }
-  return days;
-}
-
-function getWeeklyCompletionRate() {
-  const weekDays = getWeekDays();
-  if (weekDays.length === 0) return 0;
-  const totalPct = weekDays.reduce((sum, d) => sum + d.pct, 0);
-  return Math.round((totalPct / weekDays.length) * 100);
-}
-
-function getMonthlyBestHabit() {
-  const now = new Date();
-  const monthStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const habitCounts = {};
-  getActiveHabits().forEach(h => { habitCounts[h.id] = 0; });
-  Object.keys(state.completions).forEach(date => {
-    if (date.startsWith(monthStr)) {
-      (state.completions[date] || []).forEach(id => {
-        if (habitCounts[id] !== undefined) habitCounts[id]++;
-      });
-    }
-  });
-  let best = null;
-  let bestCount = 0;
-  getActiveHabits().forEach(h => {
-    const count = habitCounts[h.id] || 0;
-    if (count > bestCount) {
-      bestCount = count;
-      best = h;
-    }
-  });
-  // Need at least 3 completions this month to show
-  if (bestCount < 3) return null;
-  return best;
-}
-
+// ─── Render: Dashboard ─────────────────────────────────────────────────────
 function renderDashboard() {
-  const weekDays = getWeekDays();
-  const weeklyPct = getWeeklyCompletionRate();
-  const bestHabit = getMonthlyBestHabit();
-
-  // Progress ring
-  const ring = document.getElementById('progressRing');
-  const pctEl = document.getElementById('weeklyPct');
-  if (ring) {
-    const circumference = 2 * Math.PI * 52;
-    const offset = circumference * (1 - weeklyPct / 100);
-    ring.style.strokeDashoffset = offset;
-    if (pctEl) pctEl.textContent = weeklyPct + '%';
-  }
-
-  // Weekly bar chart
-  const barChart = document.getElementById('weeklyBarChart');
+  var weeklyPct = getWeeklyRate();
+  var ring = document.getElementById('progressRing');
+  if (ring) ring.style.strokeDashoffset = (2 * Math.PI * 52) * (1 - weeklyPct / 100);
+  var pctEl = document.getElementById('weeklyPct');
+  if (pctEl) pctEl.textContent = weeklyPct + '%';
+  var barChart = document.getElementById('weeklyBarChart');
   if (barChart) {
-    const dayLabels = ['一', '二', '三', '四', '五', '六', '日'];
-    const fullWeek = [];
-    const now = new Date();
-    const dayOfWeek = now.getDay() || 7;
-    for (let i = 1; i <= 7; i++) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - (dayOfWeek - i));
-      const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-      const isToday = dateStr === today();
-      const completedCount = getActiveHabits().filter(h => (state.completions[dateStr] || []).includes(h.id)).length;
-      const totalCount = getActiveHabits().length;
-      const pct = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
-      fullWeek.push({ dateStr, label: dayLabels[i-1], pct, isToday });
-    }
-
-    barChart.innerHTML = fullWeek.map(d => {
-      const fillClass = d.pct === 0 ? 'zero' : d.pct < 100 ? 'partial' : '';
-      return `
-        <div class="wbar-wrap">
-          <div class="wbar-track">
-            <div class="wbar-fill ${fillClass}" style="height:${Math.max(d.pct, 4)}%"></div>
-          </div>
-          <div class="wbar-label" style="color:${d.isToday ? 'var(--accent)' : 'var(--text-muted)'};font-weight:${d.isToday ? '700' : '600'}">${d.label}</div>
-        </div>`;
+    var week = getThisWeekDays();
+    var active = getActiveHabits();
+    barChart.innerHTML = week.map(function(d) {
+      var doneCount = (state.completions[d.dateStr] || []).filter(function(id) { return active.some(function(h) { return h.id === id; }); }).length;
+      var pct = active.length > 0 ? Math.round((doneCount / active.length) * 100) : 0;
+      var cls = pct === 0 ? 'zero' : pct < 100 ? 'partial' : 'full';
+      return '<div class="wbar-wrap"><div class="wbar-track"><div class="wbar-fill ' + cls + '" style="height:' + Math.max(pct, 4) + '%"></div></div><div class="wbar-label" style="color:' + (d.isToday ? 'var(--accent)' : 'var(--text-muted)') + ';font-weight:' + (d.isToday ? '700' : '600') + '">' + d.label + '</div></div>';
     }).join('');
   }
-
-  // Best habit
-  const bestEl = document.getElementById('bestHabitDisplay');
+  var best = getMonthlyBest();
+  var bestEl = document.getElementById('bestHabitDisplay');
   if (bestEl) {
-    if (!bestHabit) {
-      bestEl.innerHTML = `<div class="best-habit-empty">连续完成3次后，这里会显示你的本月最佳习惯</div>`;
-    } else {
-      const streak = getStreak(bestHabit.id);
-      bestEl.innerHTML = `
-        <div class="best-trophy">🏆</div>
-        <div class="best-habit-name" style="color:${bestHabit.color || 'var(--accent)'}">${bestHabit.name}</div>
-        <div class="best-habit-streak">🔥 ${streak} 天连续</div>
-        <div class="best-habit-meta">本月坚持最久</div>`;
-    }
+    if (!best) bestEl.innerHTML = '<div class="best-habit-empty">连续完成 3 次后，这里会自动出现你的冠军习惯</div>';
+    else bestEl.innerHTML = '<div class="best-icon">🏆</div><div class="best-name" style="color:' + (best.color || 'var(--accent)') + '">' + escHtml(best.name) + '</div><div class="best-streak">🔥 ' + getStreak(best.id) + ' 天连续</div>';
   }
 }
 
-// ─── 彩屑庆祝动画 ─────────────────────────────────────────────────────────
+// ─── Render: Today Habits ──────────────────────────────────────────────────
+function renderTodayHabits() {
+  var container = document.getElementById('todayHabitsList');
+  var todayCount = document.getElementById('todayCount');
+  var active = getActiveHabits();
+  var doneToday = active.filter(function(h) { return isCompleted(h.id); }).length;
+  if (todayCount) todayCount.textContent = '(' + doneToday + '/' + active.length + ')';
+  if (!active.length) {
+    var examplesHtml = QUICK_EXAMPLES.map(function(ex) {
+      return '<button class="chip chip-example" data-name="' + ex.name + '" data-cue="' + ex.cue + '" data-tiny="' + ex.tinyAction + '" data-color="' + ex.color + '">' + ex.name + '</button>';
+    }).join('');
+    container.innerHTML = '<div class="empty-state">' +
+      '<div class="empty-state-icon">🎯</div>' +
+      '<h3>今天还没有可执行习惯</h3>' +
+      '<p class="empty-state-sub">先添加 1 个 30 秒内能完成的小习惯</p>' +
+      '<button class="btn btn-primary" id="addFirstHabitBtn">添加第一个习惯</button>' +
+      '<div class="quick-chips">' + examplesHtml + '</div>' +
+      '</div>';
+    var btn1 = document.getElementById('addFirstHabitBtn');
+    if (btn1) btn1.addEventListener('click', function() { openModal('habitModal'); populateHabitModalDropdowns(); resetHabitForm(); });
+    container.querySelectorAll('.chip-example').forEach(function(btn) {
+      btn.addEventListener('click', function() { addQuickHabit(btn.dataset.name, btn.dataset.cue, btn.dataset.tiny, btn.dataset.color); });
+    });
+    return;
+  }
+  container.innerHTML = active.map(function(habit) {
+    var done = isCompleted(habit.id);
+    var streak = getStreak(habit.id);
+    var status = getHabitStatus(habit);
+    var linkedIdentity = habit.linkedIdentityId ? state.identities.find(function(i) { return i.id === habit.linkedIdentityId; }) : null;
+    var linkedStack = habit.linkedStackId ? state.stacks.find(function(s) { return s.id === habit.linkedStackId; }) : null;
+    var cueTiny = (habit.cue || habit.tinyAction) ? '<div class="habit-card-cue">📌 ' + escHtml(habit.cue || '') + ' → ' + escHtml(habit.tinyAction || '') + '</div>' : '';
+    var doClass = 'habit-do-btn' + (done ? ' done' : '');
+    var expandLabel = done ? '查看' : '展开';
+    return '<div class="habit-card' + (done ? ' habit-card--done' : '') + '" id="habit-card-' + habit.id + '">' +
+      '<div class="habit-card-top">' +
+        cueTiny +
+        '<span class="habit-status habit-status--' + status.status + '">' + status.label + '</span>' +
+      '</div>' +
+      '<div class="habit-card-name" style="border-left: 3px solid ' + (habit.color || '#f97316') + '">' +
+        '<span class="habit-card-title">' + escHtml(habit.name) + '</span>' +
+        (streak > 0 ? '<span class="habit-streak">🔥 ' + streak + '</span>' : '') +
+      '</div>' +
+      '<div class="habit-card-actions">' +
+        '<button class="' + doClass + '" data-id="' + habit.id + '">' + (done ? '✓' : '⚡') + '</button>' +
+        '<button class="habit-expand-btn" data-id="' + habit.id + '">' + expandLabel + ' »</button>' +
+      '</div>' +
+      '<div class="habit-card-details" id="habit-details-' + habit.id + '">' +
+        (habit.craving ? '<div class="hcd-row"><span class="hcd-label">为什么</span><span class="hcd-value">' + escHtml(habit.craving) + '</span></div>' : '') +
+        (habit.reward ? '<div class="hcd-row"><span class="hcd-label">奖励</span><span class="hcd-value">' + escHtml(habit.reward) + '</span></div>' : '') +
+        (linkedIdentity ? '<div class="hcd-row"><span class="hcd-label">身份</span><span class="hcd-value">"' + escHtml(linkedIdentity.text) + '"</span></div>' : '') +
+        (linkedStack ? '<div class="hcd-row"><span class="hcd-label">堆叠</span><span class="hcd-value">' + escHtml(linkedStack.anchor) + ' → ' + escHtml(linkedStack.newHabit) + '</span></div>' : '') +
+        (habit.desc ? '<div class="hcd-row"><span class="hcd-label">备注</span><span class="hcd-value">' + escHtml(habit.desc) + '</span></div>' : '') +
+        '<div class="hcd-btns">' +
+          '<button class="btn btn-secondary btn-sm" onclick="openLoopModal(\'' + habit.id + '\')">编辑习惯循环</button>' +
+          '<button class="btn btn-secondary btn-sm" onclick="archiveHabit(\'' + habit.id + '\')">归档</button>' +
+          '<button class="btn-delete btn-sm" onclick="deleteHabit(\'' + habit.id + '\')">删除</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  container.querySelectorAll('.habit-do-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() { toggleHabit(btn.dataset.id); });
+  });
+  container.querySelectorAll('.habit-expand-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var details = document.getElementById('habit-details-' + btn.dataset.id);
+      if (details) details.style.display = details.style.display === 'none' ? 'block' : 'none';
+    });
+  });
+}
+
+// ─── Render: Identities ────────────────────────────────────────────────────
+function renderIdentities() {
+  var grid = document.getElementById('identityGrid');
+  if (!grid) return;
+  if (!state.identities.length) {
+    grid.innerHTML = '<div class="empty-state empty-state--sm"><div class="empty-state-icon">🪪</div><p>先定义你想成为什么样的人</p><button class="btn btn-secondary btn-sm" id="addFirstIdentityBtn">+ 添加身份</button></div>';
+    var btn = document.getElementById('addFirstIdentityBtn');
+    if (btn) btn.addEventListener('click', function() { openModal('identityModal'); });
+    return;
+  }
+  grid.innerHTML = state.identities.map(function(id) {
+    return '<div class="identity-card"><div class="identity-text">"' + escHtml(id.text) + '"</div>' +
+      (id.why ? '<div class="identity-why">' + escHtml(id.why) + '</div>' : '') +
+      '<button class="btn-delete btn-sm" onclick="deleteIdentity(\'' + id.id + '\')">删除</button></div>';
+  }).join('');
+}
+
+// ─── Render: Stacks ────────────────────────────────────────────────────────
+function renderStacks() {
+  var grid = document.getElementById('stacksGrid');
+  if (!grid) return;
+  if (!state.stacks.length) {
+    grid.innerHTML = '<div class="empty-state empty-state--sm"><div class="empty-state-icon">🔗</div><p>创建你的第一个习惯堆叠</p><button class="btn btn-secondary btn-sm" id="addFirstStackBtn">+ 添加堆叠</button></div>';
+    var btn = document.getElementById('addFirstStackBtn');
+    if (btn) btn.addEventListener('click', function() { openModal('stackModal'); populateStackModalSelects(); });
+    return;
+  }
+  grid.innerHTML = state.stacks.map(function(s) {
+    return '<div class="stack-card"><div class="stack-anchor">' + escHtml(s.anchor) + '</div><div class="stack-arrow">↓</div><div class="stack-new">' + escHtml(s.newHabit) + '</div>' +
+      (s.cue ? '<div class="stack-cue">🔔 ' + escHtml(s.cue) + '</div>' : '') +
+      '<button class="btn-delete btn-sm" onclick="deleteStack(\'' + s.id + '\')">删除</button></div>';
+  }).join('');
+}
+
+// ─── Render: Archived ───────────────────────────────────────────────────────
+function renderArchived() {
+  var archived = state.habits.filter(function(h) { return h.archived; });
+  var countEl = document.getElementById('archivedCount');
+  if (countEl) countEl.textContent = '(' + archived.length + ')';
+  var grid = document.getElementById('archivedGrid');
+  if (!grid) return;
+  if (!archived.length) {
+    grid.innerHTML = '<div class="empty-state empty-state--sm"><p>暂时没有归档习惯</p><p class="empty-state-sub">归档的习惯可以随时恢复</p></div>';
+    return;
+  }
+  grid.innerHTML = archived.map(function(h) {
+    return '<div class="habit-card habit-card--archived"><div class="habit-card-name" style="border-left: 3px solid ' + (h.color || '#888') + '">' + escHtml(h.name) + '</div>' +
+      '<button class="btn btn-secondary btn-sm" onclick="unarchiveHabit(\'' + h.id + '\')">恢复</button>' +
+      '<button class="btn-delete btn-sm" onclick="deleteHabit(\'' + h.id + '\')">删除</button></div>';
+  }).join('');
+}
+
+// ─── Render All ────────────────────────────────────────────────────────────
+function renderAll() {
+  var active = getActiveHabits();
+  var doneToday = active.filter(function(h) { return isCompleted(h.id); }).length;
+  var scoreEl = document.getElementById('dailyScore');
+  var totalEl = document.getElementById('totalHabits');
+  var starsEl = document.getElementById('scoreStars');
+  if (scoreEl) scoreEl.textContent = doneToday;
+  if (totalEl) totalEl.textContent = active.length;
+  if (starsEl) starsEl.textContent = scoreStars(doneToday, active.length);
+  renderDashboard();
+  renderTodayHabits();
+  renderIdentities();
+  renderStacks();
+  renderArchived();
+  populateStackModalSelects();
+  var reflDate = document.getElementById('reflectionDate');
+  if (reflDate) { var d = new Date(); reflDate.textContent = (d.getMonth()+1) + '月' + d.getDate() + '日'; }
+}
+
+// ─── Toggle Habit ──────────────────────────────────────────────────────────
+function toggleHabit(id) {
+  var habit = state.habits.find(function(h) { return h.id === id; });
+  if (!habit) return;
+  var todayKey = today();
+  if (!state.completions[todayKey]) state.completions[todayKey] = [];
+  var idx = state.completions[todayKey].indexOf(id);
+  var wasCompleted = idx >= 0;
+  if (wasCompleted) {
+    state.completions[todayKey].splice(idx, 1);
+  } else {
+    state.completions[todayKey].push(id);
+    var newStreak = getStreak(id);
+    var milestone = MILESTONES.find(function(m) { return m.days === newStreak; });
+    if (milestone) celebrateMilestone(milestone);
+    var reward = habit.reward || '做得好！';
+    showCompletionToast('✅ ' + habit.name + (habit.reward ? ' — ' + habit.reward : ''));
+    var scoreEl = document.getElementById('dailyScore');
+    if (scoreEl) { scoreEl.classList.remove('pop-anim'); void scoreEl.offsetWidth; scoreEl.classList.add('pop-anim'); }
+  }
+  saveState();
+  renderAll();
+  saveReflection();
+}
+
+function celebrateMilestone(m) {
+  var container = document.getElementById('todayHabitsList');
+  if (container) {
+    var banner = document.createElement('div');
+    banner.className = 'milestone-banner';
+    banner.innerHTML = '<div class="mb-icon">' + m.icon + '</div><div class="mb-text"><strong>' + m.label + '达成！</strong></div><div class="mb-sub">' + m.sub + '</div>';
+    container.insertBefore(banner, container.firstChild);
+    setTimeout(function() { if (banner.parentNode) banner.remove(); }, 5000);
+  }
+  launchConfetti();
+}
+
 function launchConfetti() {
-  const canvas = document.getElementById('confettiCanvas');
+  var canvas = document.getElementById('confettiCanvas');
   if (!canvas) return;
-  const ctx = canvas.getContext('2d');
+  var ctx = canvas.getContext('2d');
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
-
-  const particles = [];
-  const colors = ['#f97316', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#eab308', '#ef4444'];
-
-  for (let i = 0; i < 120; i++) {
-    particles.push({
-      x: Math.random() * canvas.width,
-      y: -20 - Math.random() * 100,
-      vx: (Math.random() - 0.5) * 4,
-      vy: Math.random() * 3 + 2,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      size: Math.random() * 8 + 4,
-      rotation: Math.random() * 360,
-      rotationSpeed: (Math.random() - 0.5) * 10,
-      shape: Math.random() > 0.5 ? 'rect' : 'circle',
-      opacity: 1
-    });
+  var particles = [];
+  var colors = ['#f97316','#10b981','#3b82f6','#8b5cf6','#ec4899','#eab308','#ef4444'];
+  for (var i = 0; i < 120; i++) {
+    particles.push({ x: Math.random()*canvas.width, y: -20-Math.random()*100, vx: (Math.random()-0.5)*4, vy: Math.random()*3+2, color: colors[Math.floor(Math.random()*colors.length)], size: Math.random()*8+4, rotation: Math.random()*360, rotationSpeed: (Math.random()-0.5)*10, shape: Math.random()>0.5?'rect':'circle', opacity: 1 });
   }
-
-  let frame = 0;
+  var frame = 0;
   function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    particles.forEach(p => {
-      p.x += p.vx;
-      p.y += p.vy;
-      p.vy += 0.08;
-      p.rotation += p.rotationSpeed;
-      p.opacity = Math.max(0, 1 - p.y / canvas.height);
-
-      ctx.save();
-      ctx.globalAlpha = p.opacity;
-      ctx.translate(p.x, p.y);
-      ctx.rotate(p.rotation * Math.PI / 180);
-      ctx.fillStyle = p.color;
-      if (p.shape === 'rect') {
-        ctx.fillRect(-p.size/2, -p.size/4, p.size, p.size/2);
-      } else {
-        ctx.beginPath();
-        ctx.arc(0, 0, p.size/2, 0, Math.PI * 2);
-        ctx.fill();
-      }
+    particles.forEach(function(p) {
+      p.x += p.vx; p.y += p.vy; p.vy += 0.08; p.rotation += p.rotationSpeed; p.opacity = Math.max(0, 1 - p.y/canvas.height);
+      ctx.save(); ctx.globalAlpha = p.opacity; ctx.translate(p.x, p.y); ctx.rotate(p.rotation * Math.PI / 180); ctx.fillStyle = p.color;
+      if (p.shape === 'rect') ctx.fillRect(-p.size/2, -p.size/4, p.size, p.size/2);
+      else { ctx.beginPath(); ctx.arc(0, 0, p.size/2, 0, Math.PI * 2); ctx.fill(); }
       ctx.restore();
     });
-
     frame++;
-    if (frame < 180) {
-      requestAnimationFrame(animate);
-    } else {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
+    if (frame < 180) requestAnimationFrame(animate);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
   animate();
 }
 
-function celebrateMilestone(days) {
-  const milestone = MILESTONES.find(m => m.days === days);
-  if (!milestone) return;
-
-  // Show banner
-  const habitsList = document.getElementById('habitsList');
-  if (habitsList && habitsList.parentNode) {
-    const banner = document.createElement('div');
-    banner.className = 'milestone-banner';
-    banner.id = 'milestoneBanner';
-    banner.innerHTML = `
-      <div class="milestone-banner-icon">${milestone.icon}</div>
-      <div class="milestone-banner-text">${milestone.label}达成！🎉</div>
-      <div class="milestone-banner-sub">${milestone.sub}</div>`;
-    habitsList.parentNode.insertBefore(banner, habitsList);
-    setTimeout(() => {
-      const b = document.getElementById('milestoneBanner');
-      if (b) b.remove();
-    }, 5000);
-  }
-
-  launchConfetti();
-}
-
-// ─── 复利效应动画 ────────────────────────────────────────────────────────────
-function animateCompoundBars() {
-  setTimeout(() => {
-    const neg = document.getElementById('compoundNegative');
-    const pos = document.getElementById('compoundPositive');
-    if (neg) neg.style.width = '97%';
-    if (pos) pos.style.width = '100%';
-  }, 300);
-}
-
-// ─── 渲染全部 ───────────────────────────────────────────────────────────────
-function renderAll() {
-  renderDashboard();
-  renderScorecard();
-  renderIdentities();
-  renderStacks();
-  renderHabits();
-  renderArchivedSection();
-  populateStackModalSelects();
-}
-
-// ─── 渲染：得分卡 ────────────────────────────────────────────────────────
-function renderScorecard() {
-  const grid = document.getElementById('scorecardGrid');
-  const scoreEl = document.getElementById('dailyScore');
-  const totalEl = document.getElementById('totalHabits');
-  const starsEl = document.getElementById('scoreStars');
-
-  if (!grid) return;
-
-  const activeHabits = getActiveHabits();
-
-  if (activeHabits.length === 0) {
-    grid.innerHTML = `
-      <div class="empty-state" style="grid-column:1/-1">
-        <span class="empty-state-icon">📋</span>
-        <h3>还没有任何习惯</h3>
-        <p class="empty-state-sub">先添加一个2分钟内能完成的小习惯</p>
-        <div class="example-habits">
-          ${QUICK_EXAMPLE_HABITS.map(ex => `
-            <button class="example-habit-btn" onclick="addQuickHabit('${ex.name}','${ex.cue}','${ex.tinyAction}','${ex.color}')">
-              ${ex.name}
-            </button>
-          `).join('')}
-        </div>
-      </div>`;
-    scoreEl.textContent = '0';
-    totalEl.textContent = '0';
-    starsEl.textContent = '';
-    return;
-  }
-
-  grid.innerHTML = activeHabits.map(habit => {
-    const done = isCompleted(habit.id);
-    return `
-      <div class="scorecard-item" data-id="${habit.id}">
-        <div class="habit-dot" style="background:${habit.color || '#f97316'}"></div>
-        <span class="scorecard-name">${habit.name}</span>
-        <div class="scorecard-check ${done ? 'done' : ''}" data-habit="${habit.id}" title="${done ? '标记未完成' : '标记完成'}">
-          ${done ? '✓' : ''}
-        </div>
-      </div>`;
-  }).join('');
-
-  const completedToday = activeHabits.filter(h => isCompleted(h.id)).length;
-  scoreEl.textContent = completedToday;
-  totalEl.textContent = activeHabits.length;
-  starsEl.textContent = scoreStars(completedToday, activeHabits.length);
-}
-
-// ─── 快速添加示例习惯 ─────────────────────────────────────────────────────
+// ─── CRUD ─────────────────────────────────────────────────────────────────
 function addQuickHabit(name, cue, tinyAction, color) {
-  const habit = {
+  state.habits.push({ id: generateId(), name: name, cue: cue, tinyAction: tinyAction, target: 7, color: color, craving: '', reward: '', desc: '', createdAt: new Date().toISOString(), archived: false, customFreq: '', linkedIdentityId: '', linkedStackId: '' });
+  saveState(); renderAll();
+}
+
+function deleteHabit(id) {
+  if (!confirm('删除此习惯？此操作无法撤销。')) return;
+  state.habits = state.habits.filter(function(h) { return h.id !== id; });
+  Object.keys(state.completions).forEach(function(date) { state.completions[date] = state.completions[date].filter(function(x) { return x !== id; }); });
+  saveState(); renderAll();
+}
+
+function archiveHabit(id) { var h = state.habits.find(function(x) { return x.id === id; }); if (h) { h.archived = true; saveState(); renderAll(); } }
+function unarchiveHabit(id) { var h = state.habits.find(function(x) { return x.id === id; }); if (h) { h.archived = false; saveState(); renderAll(); } }
+function deleteIdentity(id) { state.identities = state.identities.filter(function(i) { return i.id !== id; }); saveState(); renderAll(); }
+function deleteStack(id) { state.stacks = state.stacks.filter(function(s) { return s.id !== id; }); saveState(); renderAll(); }
+
+// ───// ─── Habit Form ───────────────────────────────────────────────────────────
+function resetHabitForm() {
+  var form = document.getElementById('habitForm');
+  if (form) form.reset();
+  var cfg = document.getElementById('customFreqGroup');
+  if (cfg) cfg.style.display = 'none';
+  var preview = document.getElementById('habitPreview');
+  if (preview) preview.classList.remove('visible');
+  var adv = document.getElementById('advancedSection');
+  if (adv) adv.classList.remove('open');
+  var advText = document.getElementById('advancedToggleText');
+  if (advText) advText.textContent = '展开更多设置';
+  var advArrow = document.getElementById('advancedToggleArrow');
+  if (advArrow) advArrow.textContent = '▼';
+  document.querySelectorAll('.color-dot').forEach(function(d, i) { d.classList.toggle('active', i === 0); });
+}
+
+function populateHabitModalDropdowns() {
+  var identitySel = document.getElementById('habitIdentitySelect');
+  if (identitySel) {
+    identitySel.innerHTML = '<option value="">— 不关联身份 —</option>';
+    state.identities.forEach(function(id) {
+      var opt = document.createElement('option'); opt.value = id.id; opt.textContent = id.text; identitySel.appendChild(opt);
+    });
+  }
+  var stackSel = document.getElementById('habitStackSelect');
+  if (stackSel) {
+    stackSel.innerHTML = '<option value="">— 不关联堆叠 —</option>';
+    state.stacks.forEach(function(st) {
+      var opt = document.createElement('option'); opt.value = st.id; opt.textContent = (st.anchor || '') + ' → ' + (st.newHabit || ''); stackSel.appendChild(opt);
+    });
+  }
+}
+
+document.getElementById('habitForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var name = (document.getElementById('habitName') || {}).value.trim();
+  if (!name) return;
+  var targetVal = (document.getElementById('habitTarget') || {}).value || '7';
+  var customFreq = targetVal === 'custom' ? ((document.getElementById('customFreqInput') || {}).value || '').trim() : '';
+  var activeColor = document.querySelector('.color-dot.active');
+  var habit = {
     id: generateId(),
-    name,
-    cue,
-    tinyAction,
-    target: 7,
-    color,
-    craving: '', response: tinyAction, reward: '',
+    name: name,
+    cue: (document.getElementById('habitCue') || {}).value.trim() || '',
+    tinyAction: (document.getElementById('habitTinyAction') || {}).value.trim() || '',
+    target: targetVal === 'custom' ? 7 : parseInt(targetVal),
+    customFreq: customFreq,
+    craving: (document.getElementById('habitMotivation') || {}).value.trim() || '',
+    reward: (document.getElementById('habitInstantReward') || {}).value.trim() || '',
+    desc: (document.getElementById('habitDesc') || {}).value.trim() || '',
+    color: (activeColor && activeColor.dataset && activeColor.dataset.color) || '#f97316',
+    linkedIdentityId: (document.getElementById('habitIdentitySelect') || {}).value || '',
+    linkedStackId: (document.getElementById('habitStackSelect') || {}).value || '',
     createdAt: new Date().toISOString(),
-    archived: false,
-    customFreq: ''
+    archived: false
   };
   state.habits.push(habit);
   saveState();
+  closeModals();
+  resetHabitForm();
   renderAll();
-}
+});
 
-// ─── 渲染：身份认同 ──────────────────────────────────────────────────────
-function renderIdentities() {
-  const grid = document.getElementById('identityGrid');
-  if (!grid) return;
-
-  if (state.identities.length === 0) {
-    grid.innerHTML = `
-      <div class="empty-state" style="grid-column:1/-1">
-        <div class="empty-state-icon">🪪</div>
-        <p>基于身份的习惯是最强大的。添加一个吧！</p>
-      </div>`;
-    return;
-  }
-
-  grid.innerHTML = state.identities.map(id => `
-    <div class="identity-card">
-      <div class="identity-text">"${id.text}"</div>
-      ${id.why ? `<div class="identity-why">${id.why}</div>` : ''}
-      <div class="identity-actions">
-        <button class="btn-delete" onclick="deleteIdentity('${id.id}')">删除</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-// ─── 渲染：习惯堆叠 ──────────────────────────────────────────────────────────
-function renderStacks() {
-  const grid = document.getElementById('stacksGrid');
-  if (!grid) return;
-
-  if (state.stacks.length === 0) {
-    grid.innerHTML = `
-      <div class="empty-state" style="grid-column:1/-1">
-        <div class="empty-state-icon">🔗</div>
-        <p>习惯堆叠将新习惯与已有习惯联系起来</p>
-      </div>`;
-    return;
-  }
-
-  grid.innerHTML = state.stacks.map(s => `
-    <div class="stack-card">
-      <div class="stack-anchor">在……之后</div>
-      <div class="stack-action">${s.anchor}</div>
-      <div class="stack-after">我将……</div>
-      <div class="stack-action" style="color:var(--accent)">${s.newHabit}</div>
-      ${s.cue ? `<div class="stack-cue">🔔 提示：${s.cue}</div>` : ''}
-      <div class="identity-actions" style="margin-top:10px">
-        <button class="btn-delete" onclick="deleteStack('${s.id}')">删除</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-// ─── 渲染：习惯 ─────────────────────────────────────────────────────────
-function renderHabits() {
-  const list = document.getElementById('habitsContainer');
-  if (!list) return;
-
-  const activeHabits = getActiveHabits();
-
-  if (activeHabits.length === 0) {
-    list.innerHTML = `
-      <div class="empty-state">
-        <span class="empty-state-icon">🎯</span>
-        <h3>今天还没有可执行习惯</h3>
-        <p class="empty-state-sub">先添加 1 个 30 秒内能完成的小习惯</p>
-        <button class="btn btn-primary btn-sm" onclick="openModal('habitModal')">添加第一个习惯</button>
-        <div class="example-habits" style="margin-top:16px">
-          ${QUICK_EXAMPLE_HABITS.map(ex => `
-            <button class="example-habit-btn" onclick="addQuickHabit('${ex.name}','${ex.cue}','${ex.tinyAction}','${ex.color}')">
-              ${ex.name}
-            </button>
-          `).join('')}
-        </div>
-      </div>`;
-    return;
-  }
-
-  list.innerHTML = activeHabits.map(habit => {
-    const streak = getStreak(habit.id);
-    const last30 = getLast30Days(habit.id);
-    const streakClass = streak > 0 ? '' : 'streak-zero';
-
-    // Find linked identity
-    const linkedIdentity = habit.linkedIdentityId
-      ? state.identities.find(i => i.id === habit.linkedIdentityId)
-      : null;
-
-    // Find linked stack
-    const linkedStack = habit.linkedStackId
-      ? state.stacks.find(s => s.id === habit.linkedStackId)
-      : null;
-
-    // Also find stacks that reference this habit's cue as anchor
-    const stacksForThisHabit = state.stacks.filter(s => {
-      return s.habitId === habit.id ||
-             (s.anchor === habit.cue && !s.habitId);
-    });
-
-    // Find identity text from habit name or cue if there's a matching pattern
-    // Show inline meta tags
-    const metaTags = [];
-    if (linkedStack) {
-      metaTags.push(`<span class="habit-meta-tag"><span class="tag-icon">📌</span> ${linkedStack.anchor} → ${habit.tinyAction || habit.name}</span>`);
-    } else if (habit.cue && habit.tinyAction) {
-      metaTags.push(`<span class="habit-meta-tag"><span class="tag-icon">📌</span> ${habit.cue} → ${habit.tinyAction}</span>`);
-    }
-    if (linkedIdentity) {
-      metaTags.push(`<span class="habit-meta-tag"><span class="tag-icon">🪪</span> ${linkedIdentity.text}</span>`);
-    }
-
-    // Milestone for exact streak
-    const exactMilestone = MILESTONES.find(m => m.days === streak);
-
-    return `
-      <div class="habit-card" data-habit="${habit.id}" style="--habit-color:${habit.color || 'var(--accent)'}">
-        <div class="habit-card-header">
-          <div class="habit-title-row">
-            <div class="habit-dot" style="background:${habit.color || '#f97316'}"></div>
-            <div>
-              <div class="habit-name">${habit.name}</div>
-              ${habit.desc ? `<div class="habit-desc">${habit.desc}</div>` : ''}
-            </div>
-          </div>
-          <div class="habit-actions">
-            ${exactMilestone ? `<span class="milestone-badge milestone-${streak}">${exactMilestone.icon}</span>` : ''}
-            <span class="streak-badge ${streakClass}">🔥 ${streak} 天</span>
-            <button class="btn-archive" onclick="archiveHabit('${habit.id}')" title="归档习惯">📦</button>
-            <button class="btn-icon" onclick="deleteHabit('${habit.id}')" title="删除习惯" style="font-size:0.9rem;width:30px;height:30px">🗑️</button>
-          </div>
-        </div>
-
-        ${metaTags.length > 0 ? `<div class="habit-card-meta">${metaTags.join('')}</div>` : ''}
-
-        <!-- Inline action: complete button + expand for details -->
-        <div class="habit-actions-inline">
-          <button class="btn-complete-habit ${isCompleted(habit.id) ? 'completed' : ''}" 
-                  onclick="toggleHabit('${habit.id}')" 
-                  data-habit="${habit.id}">
-            ${isCompleted(habit.id) ? '✓ 已完成' : '⚡ 完成'}
-          </button>
-          <button class="optimize-link" id="optimizeLink_${habit.id}" onclick="toggleOptimizeLink('${habit.id}')">
-            ✨ 优化这个习惯 <span class="optimize-link__arrow">▶</span>
-          </button>
-        </div>
-
-        <!-- Inline loop expand (hidden by default) -->
-        <div class="loop-expand" id="loopExpand_${habit.id}">
-          <div class="loop-expand-grid">
-            <div class="loop-expand-field">
-              <label>提示（触发）</label>
-              <input type="text" id="expandCue_${habit.id}" value="${habit.cue || ''}" placeholder="什么触发了这个习惯？">
-            </div>
-            <div class="loop-expand-field">
-              <label>渴望（动机）</label>
-              <input type="text" id="expandCraving_${habit.id}" value="${habit.craving || ''}" placeholder="你渴望什么？">
-            </div>
-            <div class="loop-expand-field">
-              <label>反应（行动）</label>
-              <input type="text" id="expandResponse_${habit.id}" value="${habit.response || ''}" placeholder="你实际上做什么？">
-            </div>
-            <div class="loop-expand-field">
-              <label>即时奖励</label>
-              <input type="text" id="expandReward_${habit.id}" value="${habit.reward || ''}" placeholder="完成后立刻感受到什么？">
-            </div>
-          </div>
-          <div style="margin-top:10px;display:flex;justify-content:flex-end;gap:8px">
-            <button class="btn btn-secondary btn-sm" onclick="cancelOptimizeLink('${habit.id}')">取消</button>
-            <button class="btn btn-primary btn-sm" onclick="saveOptimizeLink('${habit.id}')">保存</button>
-          </div>
-        </div>
-
-        <div class="streak-calendar">
-          <div class="streak-calendar-label">
-            <span>最近30天</span>
-            <span>${streak > 0 ? '🔥 别打断链！' : '今天开始你的链！'}</span>
-          </div>
-          <div class="streak-grid">
-            ${last30.map((day, idx) => {
-              let dayClass = 'streak-day';
-              if (day.completed) dayClass += ' completed';
-              if (day.isToday) dayClass += ' today';
-              const daysFromEnd = 29 - idx;
-              if (day.completed && streak > 0 && (streak - daysFromEnd) > 0) {
-                const streakOnDay = streak - daysFromEnd;
-                if (streakOnDay === 7) dayClass += ' milestone-7';
-                else if (streakOnDay === 21) dayClass += ' milestone-21';
-                else if (streakOnDay === 66) dayClass += ' milestone-66';
-                else if (streakOnDay === 100) dayClass += ' milestone-100';
-              }
-              return `<div class="${dayClass}" title="${day.date}${day.completed ? ' ✓' : ''}"></div>`;
-            }).join('')}
-          </div>
-        </div>
-      </div>`;
-  }).join('');
-}
-
-// ─── Toggle Optimize Link (inline habit loop editing) ────────────────────
-function toggleOptimizeLink(habitId) {
-  const expandEl = document.getElementById('loopExpand_' + habitId);
-  const linkEl = document.getElementById('optimizeLink_' + habitId);
-  if (!expandEl) return;
-
-  const isOpen = expandEl.classList.contains('open');
-  expandEl.classList.toggle('open');
-  if (linkEl) linkEl.classList.toggle('open', !isOpen);
-}
-
-function cancelOptimizeLink(habitId) {
-  const expandEl = document.getElementById('loopExpand_' + habitId);
-  const linkEl = document.getElementById('optimizeLink_' + habitId);
-  if (expandEl) expandEl.classList.remove('open');
-  if (linkEl) linkEl.classList.remove('open');
-}
-
-
-function saveOptimizeLink(habitId) {
-  const habit = state.habits.find(h => h.id === habitId);
-  if (!habit) return;
-
-  habit.craving = document.getElementById('expandCraving_' + habitId)?.value.trim() || '';
-  habit.response = document.getElementById('expandResponse_' + habitId)?.value.trim() || '';
-  habit.reward = document.getElementById('expandReward_' + habitId)?.value.trim() || '';
-
+document.getElementById('identityForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var text = (document.getElementById('identityText') || {}).value.trim();
+  if (!text) return;
+  state.identities.push({ id: generateId(), text: text, why: (document.getElementById('identityWhy') || {}).value.trim() || '' });
   saveState();
-  cancelOptimizeLink(habitId);
-  renderHabits();
-}
-
-// ─── 渲染：归档区域 ───────────────────────────────────────────────────────
-function renderArchivedSection() {
-  const section = document.getElementById('archivedSection');
-  const list = document.getElementById('archivedList');
-  if (!section || !list) return;
-
-  const archived = getArchivedHabits();
-  if (archived.length === 0) {
-    section.style.display = 'none';
-    return;
-  }
-
-  section.style.display = 'block';
-
-  list.innerHTML = archived.map(habit => `
-    <div class="habit-card archived" data-habit="${habit.id}" style="--habit-color:${habit.color || 'var(--accent)'}">
-      <div class="habit-card-header">
-        <div class="habit-title-row">
-          <div class="habit-dot" style="background:${habit.color || '#f97316'};opacity:0.5"></div>
-          <div>
-            <div class="habit-name" style="opacity:0.7">${habit.name}</div>
-            ${habit.desc ? `<div class="habit-desc">${habit.desc}</div>` : ''}
-          </div>
-        </div>
-        <div class="habit-actions">
-          <button class="btn-unarchive" onclick="unarchiveHabit('${habit.id}')">↩️ 恢复</button>
-          <button class="btn-delete" onclick="deleteHabit('${habit.id}')">🗑️</button>
-        </div>
-      </div>
-    </div>
-  `).join('');
-}
-
-// ─── 归档 / 恢复 ───────────────────────────────────────────────────────────
-function archiveHabit(habitId) {
-  const habit = state.habits.find(h => h.id === habitId);
-  if (habit) {
-    habit.archived = true;
-    saveState();
-    renderAll();
-  }
-}
-
-function unarchiveHabit(habitId) {
-  const habit = state.habits.find(h => h.id === habitId);
-  if (habit) {
-    habit.archived = false;
-    saveState();
-    renderAll();
-  }
-}
-
-// ─── 切换完成状态 ───────────────────────────────────────────────────────
-function toggleHabit(habitId) {
-  const d = today();
-  if (!state.completions[d]) state.completions[d] = [];
-  const idx = state.completions[d].indexOf(habitId);
-  const wasCompleted = idx >= 0;
-  const habit = state.habits.find(h => h.id === habitId);
-
-  if (!habit) return; // Should not happen
-
-  if (wasCompleted) {
-    state.completions[d].splice(idx, 1);
-  } else {
-    state.completions[d].push(habitId);
-    const newStreak = getStreak(habitId);
-    if (MILESTONES.some(m => m.days === newStreak)) {
-      celebrateMilestone(newStreak);
-    }
-    showCompletionToast(habit.name, habit.reward);
-    animateScore();
-  }
-
-  saveState();
+  closeModals();
+  document.getElementById('identityForm').reset();
   renderAll();
-}
+});
 
-// ─── 完成习惯后即时反馈 ───────────────────────────────────────────────────
-function showCompletionToast(habitName, rewardText) {
-  const toast = document.getElementById('toast');
-  if (!toast) return;
-
-  toast.textContent = `✅ 完成！${habitName}${rewardText ? ' - ' + rewardText : ''}`;
-  toast.className = 'toast success show';
-  clearTimeout(toast._timer);
-  toast._timer = setTimeout(function() {
-    toast.classList.remove('show');
-  }, 2000); // Disappear after 2 seconds
-}
-
-function animateScore() {
-  const scoreEl = document.getElementById('dailyScore');
-  if (scoreEl) {
-    scoreEl.classList.add('pop');
-    setTimeout(() => {
-      scoreEl.classList.remove('pop');
-    }, 500);
-  }
-}
-
-// ─── 删除习惯 ────────────────────────────────────────────────────────────
-function deleteHabit(habitId) {
-  if (!confirm('删除此习惯吗？此操作无法撤销。')) return;
-  state.habits = state.habits.filter(h => h.id !== habitId);
-  Object.keys(state.completions).forEach(date => {
-    state.completions[date] = state.completions[date].filter(id => id !== habitId);
+document.getElementById('stackForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var anchor = (document.getElementById('stackAnchor') || {}).value.trim();
+  var newHabit = (document.getElementById('stackNew') || {}).value.trim();
+  if (!anchor || !newHabit) return;
+  state.stacks.push({
+    id: generateId(),
+    anchor: anchor,
+    newHabit: newHabit,
+    habitId: (document.getElementById('stackHabitId') || {}).value || '',
+    identityId: (document.getElementById('stackIdentityId') || {}).value || '',
+    cue: (document.getElementById('stackCue') || {}).value.trim() || ''
   });
   saveState();
+  closeModals();
+  document.getElementById('stackForm').reset();
   renderAll();
-}
+});
 
-// ─── 删除身份 ─────────────────────────────────────────────────────────
-function deleteIdentity(id) {
-  state.identities = state.identities.filter(i => i.id !== id);
+document.getElementById('loopForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var habitId = (document.getElementById('loopHabitId') || {}).value;
+  var habit = state.habits.find(function(h) { return h.id === habitId; });
+  if (!habit) return;
+  habit.cue = (document.getElementById('loopCue') || {}).value.trim() || '';
+  habit.craving = (document.getElementById('loopCraving') || {}).value.trim() || '';
+  habit.tinyAction = (document.getElementById('loopResponse') || {}).value.trim() || '';
+  habit.reward = (document.getElementById('loopReward') || {}).value.trim() || '';
   saveState();
-  renderIdentities();
-  renderHabits();
-}
-
-// ─── 删除堆叠 ───────────────────────────────────────────────────────────
-function deleteStack(id) {
-  state.stacks = state.stacks.filter(s => s.id !== id);
-  saveState();
-  renderStacks();
-  renderHabits();
-}
-
-// ─── 弹窗 ───────────────────────────────────────────────────────
-function openModal(id) {
-  document.getElementById(id)?.classList.add('open');
-  if (id === 'habitModal') {
-    const advSection = document.getElementById('advancedSection');
-    const advToggle = document.getElementById('advancedToggle');
-    const advToggleText = document.getElementById('advancedToggleText');
-    const advToggleArrow = document.getElementById('advancedToggleArrow');
-    if (advSection) advSection.classList.remove('open');
-    if (advToggle) advToggle.classList.remove('open');
-    if (advToggleText) advToggleText.textContent = '展开高级设置';
-    if (advToggleArrow) advToggleArrow.textContent = '▼';
-    updateHabitPreview();
-    document.querySelectorAll('#habitModal .chip').forEach(c => c.classList.remove('selected'));
-    const customFreqGroup = document.getElementById('customFreqGroup');
-    if (customFreqGroup) customFreqGroup.style.display = 'none';
-  }
-}
-function closeModal(id) {
-  document.getElementById(id)?.classList.remove('open');
-}
-
-function closeAllModals() {
-  document.querySelectorAll('.modal').forEach(m => m.classList.remove('open'));
-}
+  closeModals();
+  renderAll();
+});
 
 function openLoopModal(habitId) {
-  const habit = state.habits.find(h => h.id === habitId);
+  var habit = state.habits.find(function(h) { return h.id === habitId; });
   if (!habit) return;
   document.getElementById('loopHabitId').value = habitId;
   document.getElementById('loopCue').value = habit.cue || '';
   document.getElementById('loopCraving').value = habit.craving || '';
-  document.getElementById('loopResponse').value = habit.response || '';
+  document.getElementById('loopResponse').value = habit.tinyAction || '';
   document.getElementById('loopReward').value = habit.reward || '';
-  document.getElementById('loopModalTitle').textContent = '编辑习惯循环：' + habit.name;
   openModal('loopModal');
 }
 
-// ─── 归档区域折叠 ─────────────────────────────────────────────────────────
-let archivedExpanded = false;
-function toggleArchived() {
-  const list = document.getElementById('archivedList');
-  const btn = document.getElementById('toggleArchivedBtn');
-  if (!list) return;
-  archivedExpanded = !archivedExpanded;
-  list.style.display = archivedExpanded ? 'flex' : 'none';
-  if (btn) btn.textContent = archivedExpanded ? '收起' : '展开';
-}
-
-// ─── 方法工具箱折叠 ─────────────────────────────────────────────────────
-let toolboxOpen = false;
-function toggleToolbox() {
-  const content = document.getElementById('toolboxContent');
-  const toggle = document.getElementById('toolboxToggle');
-  var toolboxQuickChips = document.getElementById('toolboxQuickChips');
-  if (toolboxQuickChips) {
-    toolboxQuickChips.addEventListener('click', function(e) {
-      var chip = e.target.closest('.chip-quick');
-      if (!chip) return;
-      var tip = chip.dataset.tip;
-      var answers = {
-        forget: '<strong>我总是忘</strong>：把习惯放到「已有习惯」的后面。比如：<em>洗完脸后 → 读1页书</em>。触发的上下文越具体，越不需要意志力。',
-        procrastinate: '<strong>我总是拖</strong>：用「2分钟规则」。告诉自己"只做2分钟就好"。最难的是开始，一旦开始往往停不下来。',
-        overwhelm: '<strong>我总是开始太大</strong>：把目标缩小到荒谬。小到不可能失败：1个俯卧撑、读1行、走1分钟。然后再慢慢加。'
-      };
-      var answerEl = document.getElementById('toolboxQuickAnswer');
-      if (answerEl) answerEl.innerHTML = answers[tip] || '';
-    });
-  }
-
-  // Hero tip collapsible
-  var heroTipToggle = document.getElementById('heroTipToggle');
-  if (heroTipToggle) {
-    heroTipToggle.addEventListener('click', function() {
-      var body = document.getElementById('heroTipBody');
-      var arrow = document.getElementById('heroTipArrow');
-      var isOpen = body.style.display !== 'none';
-      body.style.display = isOpen ? 'none' : 'block';
-      arrow.textContent = isOpen ? '▶' : '▼';
-      heroTipToggle.setAttribute('aria-expanded', !isOpen);
-    });
-  }
-
-  document.getElementById('toolboxToggle');
-  const toggleText = document.getElementById('toolboxToggleText');
-  const toggleArrow = document.getElementById('toolboxToggleArrow');
-  toolboxOpen = !toolboxOpen;
-  if (content) content.style.display = toolboxOpen ? 'block' : 'none';
-  if (toggle) toggle.classList.toggle('open', toolboxOpen);
-  if (toggleText) toggleText.textContent = toolboxOpen ? '收起方法工具箱' : '展开方法工具箱';
-  if (toggleArrow) toggleArrow.textContent = toolboxOpen ? '▲' : '▼';
-}
-
-// ─── Populate stack modal selects ─────────────────────────────────────
 function populateStackModalSelects() {
-  const habitSelect = document.getElementById('stackHabitId');
-  const identitySelect = document.getElementById('stackIdentityId');
-  if (!habitSelect || !identitySelect) return;
-  const habitOptions = getActiveHabits().map(h =>
-    '<option value="' + h.id + '">' + h.name + '</option>'
-  ).join('');
-  const identityOptions = state.identities.map(i =>
-    '<option value="' + i.id + '">' + i.text + '</option>'
-  ).join('');
-  habitSelect.innerHTML = '<option value="">（不关联）</option>' + habitOptions;
-  identitySelect.innerHTML = '<option value="">（不关联）</option>' + identityOptions;
-}
-
-// ─── Toast ────────────────────────────────────────────────────────────────
-function showToast(message, type) {
-  type = type || 'info';
-  const toast = document.getElementById('toast');
-  if (!toast) return;
-  toast.textContent = message;
-  toast.className = 'toast ' + type + ' show';
-  clearTimeout(toast._timer);
-  toast._timer = setTimeout(function() {
-    toast.classList.remove('show');
-  }, 3000);
-}
-
-// ─── 数据导出 ────────────────────────────────────────────────────────────────
-function exportData() {
-  var NS = 'atomic_habits_';
-  var backup = {};
-  for (var i = 0; i < localStorage.length; i++) {
-    var key = localStorage.key(i);
-    if (key && key.startsWith(NS)) {
-      try {
-        backup[key] = JSON.parse(localStorage.getItem(key));
-      } catch (e) {
-        backup[key] = localStorage.getItem(key);
-      }
-    }
-  }
-  if (Object.keys(backup).length === 0) {
-    showToast('没有可导出的数据', 'error');
-    return;
-  }
-  backup._meta = {
-    app: 'atomic-habits-tracker',
-    version: '2.0',
-    exportedAt: new Date().toISOString()
-  };
-  var json = JSON.stringify(backup, null, 2);
-  var blob = new Blob([json], { type: 'application/json' });
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  var date = new Date().toISOString().slice(0, 10);
-  a.href = url;
-  a.download = 'atomic-habits-backup-' + date + '.json';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showToast('数据导出成功！', 'success');
-}
-
-// ─── 数据导入 ────────────────────────────────────────────────────────────────
-function importData(file) {
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      var data = JSON.parse(e.target.result);
-      if (!data._meta || !data._meta.app === 'atomic-habits-tracker') {
-        showToast('无效的备份文件格式', 'error');
-        return;
-      }
-      if (!confirm('导入将覆盖现有数据，确定继续？')) return;
-      var NS = 'atomic_habits_';
-      var keysToRemove = [];
-      for (var i = 0; i < localStorage.length; i++) {
-        var key = localStorage.key(i);
-        if (key && key.startsWith(NS)) keysToRemove.push(key);
-      }
-      keysToRemove.forEach(function(k) { localStorage.removeItem(k); });
-      for (var key in data) {
-        if (key === '_meta') continue;
-        localStorage.setItem(key, JSON.stringify(data[key]));
-      }
-      loadState();
-      renderAll();
-      showToast('数据导入成功！页面已刷新。', 'success');
-    } catch (err) {
-      showToast('导入失败：文件格式错误', 'error');
-    }
-  };
-  reader.onerror = function() {
-    showToast('读取文件失败', 'error');
-  };
-  reader.readAsText(file);
-}
-
-// ─── 事件监听 ─────────────────────────────────────────────────────────
-function setupEventListeners() {
-  // 深色模式
-  var darkToggle = document.getElementById('darkModeToggle');
-  if (darkToggle) {
-    darkToggle.addEventListener('click', function() {
-      var html = document.documentElement;
-      var current = html.getAttribute('data-theme');
-      var next = current === 'dark' ? 'light' : 'dark';
-      html.setAttribute('data-theme', next);
-      darkToggle.textContent = next === 'dark' ? '☀️' : '🌙';
-      darkToggle.title = next === 'dark' ? '切换浅色模式' : '切换深色模式';
-      localStorage.setItem('theme', next);
+  var habitSel = document.getElementById('stackHabitId');
+  var identitySel = document.getElementById('stackIdentityId');
+  if (habitSel) {
+    habitSel.innerHTML = '<option value="">（不关联）</option>';
+    getActiveHabits().forEach(function(h) {
+      var opt = document.createElement('option'); opt.value = h.id; opt.textContent = h.name; habitSel.appendChild(opt);
     });
   }
-
-  var savedTheme = localStorage.getItem('theme');
-  if (savedTheme) {
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    var dmBtn = document.getElementById('darkModeToggle');
-    if (dmBtn) {
-      dmBtn.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
-      dmBtn.title = savedTheme === 'dark' ? '切换浅色模式' : '切换深色模式';
-    }
-  }
-
-  // 按钮事件
-  var addBtn = document.getElementById('addHabitBtn');
-  if (addBtn) addBtn.addEventListener('click', function() { openModal('habitModal');
-      populateHabitModalDropdowns(); });
-  var addIdBtn = document.getElementById('addIdentityBtn');
-  if (addIdBtn) addIdBtn.addEventListener('click', function() { openModal('identityModal'); });
-  var addStkBtn = document.getElementById('addStackBtn');
-  if (addStkBtn) addStkBtn.addEventListener('click', function() { openModal('stackModal'); });
-  var toggleArchBtn = document.getElementById('toggleArchivedBtn');
-  if (toggleArchBtn) toggleArchBtn.addEventListener('click', toggleArchived);
-  if (toolboxQuickChips) {
-    toolboxQuickChips.addEventListener('click', function(e) {
-      var chip = e.target.closest('.chip-quick');
-      if (!chip) return;
-      var tip = chip.dataset.tip;
-      var answers = {
-        forget: '<strong>我总是忘</strong>：把习惯放到「已有习惯」的后面。比如：<em>洗完脸后 → 读1页书</em>。触发的上下文越具体，越不需要意志力。',
-        procrastinate: '<strong>我总是拖</strong>：用「2分钟规则」。告诉自己"只做2分钟就好"。最难的是开始，一旦开始往往停不下来。',
-        overwhelm: '<strong>我总是开始太大</strong>：把目标缩小到荒谬。小到不可能失败：1个俯卧撑、读1行、走1分钟。然后再慢慢加。'
-      };
-      var answerEl = document.getElementById('toolboxQuickAnswer');
-      if (answerEl) answerEl.innerHTML = answers[tip] || '';
-    });
-  }
-
-  // Hero tip collapsible
-  var heroTipToggle = document.getElementById('heroTipToggle');
-  if (heroTipToggle) {
-    heroTipToggle.addEventListener('click', function() {
-      var body = document.getElementById('heroTipBody');
-      var arrow = document.getElementById('heroTipArrow');
-      var isOpen = body.style.display !== 'none';
-      body.style.display = isOpen ? 'none' : 'block';
-      arrow.textContent = isOpen ? '▶' : '▼';
-      heroTipToggle.setAttribute('aria-expanded', !isOpen);
-    });
-  }
-
-  document.getElementById('toolboxToggle');
-  if (toolboxTgl) toolboxTgl.addEventListener('click', toggleToolbox);
-
-  // 弹窗关闭
-  document.querySelectorAll('.modal-backdrop').forEach(function(el) {
-    el.addEventListener('click', closeAllModals);
-  });
-  document.querySelectorAll('.modal-close').forEach(function(el) {
-    el.addEventListener('click', closeAllModals);
-  });
-
-  // 颜色选择器
-  document.querySelectorAll('.color-dot').forEach(function(dot) {
-    dot.addEventListener('click', function() {
-      document.querySelectorAll('.color-dot').forEach(function(d) { d.classList.remove('active'); });
-      dot.classList.add('active');
-    });
-  });
-
-  // 高级设置
-  var advToggle = document.getElementById('advancedToggle');
-  if (advToggle) {
-    advToggle.addEventListener('click', function() {
-      var advSection = document.getElementById('advancedSection');
-      var advToggleText = document.getElementById('advancedToggleText');
-      var advToggleArrow = document.getElementById('advancedToggleArrow');
-      var isOpen = advSection && advSection.classList.contains('open');
-      if (advSection) advSection.classList.toggle('open');
-      advToggle.classList.toggle('open');
-      if (advToggleText) advToggleText.textContent = isOpen ? '展开高级设置' : '收起高级设置';
-      if (advToggleArrow) advToggleArrow.textContent = isOpen ? '▼' : '▲';
-    });
-  }
-
-  // 自定义频率
-  var habitTarget = document.getElementById('habitTarget');
-  if (habitTarget) {
-    habitTarget.addEventListener('change', function() {
-      var customFreqGroup = document.getElementById('customFreqGroup');
-      if (habitTarget.value === 'custom') {
-        if (customFreqGroup) customFreqGroup.style.display = 'block';
-      } else {
-        if (customFreqGroup) customFreqGroup.style.display = 'none';
-      }
-    });
-  }
-
-  // 预设芯片
-  document.querySelectorAll('.chip').forEach(function(chip) {
-    chip.addEventListener('click', function() {
-      var parent = chip.closest('.form-group');
-      var chipsContainer = parent && parent.querySelector('.preset-chips');
-      var input = parent && parent.querySelector('input[type="text"]');
-      var chipVal = chip.dataset.val;
-      if (chipsContainer) {
-        var wasSelected = chip.classList.contains('selected');
-        chipsContainer.querySelectorAll('.chip').forEach(function(c) { c.classList.remove('selected'); });
-        if (!wasSelected) {
-          chip.classList.add('selected');
-          if (input) input.value = chipVal;
-        } else {
-          if (input) input.value = '';
-        }
-      }
-      updateHabitPreview();
-    });
-  });
-
-  // 习惯预览
-  function updateHabitPreview() {
-    var name = (document.getElementById('habitName') || {}).value || '';
-    var cue = (document.getElementById('habitCue') || {}).value || '';
-    var tinyAction = (document.getElementById('habitTinyAction') || {}).value || '';
-    var preview = document.getElementById('habitPreview');
-    var previewText = document.getElementById('habitPreviewText');
-    if (!preview || !previewText) return;
-    name = name.trim();
-    cue = cue.trim();
-    tinyAction = tinyAction.trim();
-    if (name && cue && tinyAction) {
-      previewText.textContent = '在我' + cue + '后，我会' + tinyAction + '。';
-      preview.classList.add('visible');
-    } else if (name && cue) {
-      previewText.textContent = '在我' + cue + '后，我会……';
-      preview.classList.add('visible');
-    } else if (name && tinyAction) {
-      previewText.textContent = name + ' → ' + tinyAction;
-      preview.classList.add('visible');
-    } else {
-      preview.classList.remove('visible');
-    }
-  }
-  ['habitName', 'habitCue', 'habitTinyAction'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.addEventListener('input', updateHabitPreview);
-  });
-
-  // 快速反思按钮
-  var reflGoodBtn = document.getElementById('reflectGoodBtn');
-  if (reflGoodBtn) reflGoodBtn.addEventListener('click', function() { handleReflectionClick('good'); });
-  var reflHardBtn = document.getElementById('reflectHardBtn');
-  if (reflHardBtn) reflHardBtn.addEventListener('click', function() { handleReflectionClick('hard'); });
-
-  // 得分卡点击
-  var scorecardGrid = document.getElementById('scorecardGrid');
-  if (scorecardGrid) {
-    scorecardGrid.addEventListener('click', function(e) {
-      var check = e.target.closest('.scorecard-check');
-      if (check) toggleHabit(check.dataset.habit);
-    });
-  }
-
-  // 习惯表单
-  var habitForm = document.getElementById('habitForm');
-  if (habitForm) {
-    habitForm.addEventListener('submit', function(e) {
-      e.preventDefault();
-      var name = (document.getElementById('habitName') || {}).value.trim();
-      if (!name) return;
-      var activeColor = document.querySelector('.color-dot.active');
-      var targetVal = (document.getElementById('habitTarget') || {}).value || '7';
-      var customFreq = targetVal === 'custom'
-        ? ((document.getElementById('customFreqInput') || {}).value || '').trim()
-        : '';
-      var habit = {
-        id: generateId(),
-        name: name,
-        desc: ((document.getElementById('habitDesc') || {}).value || '').trim(),
-        target: targetVal === 'custom' ? 7 : parseInt(targetVal),
-        color: (activeColor && activeColor.dataset.color) || '#f97316',
-        cue: ((document.getElementById('habitCue') || {}).value || '').trim(),
-        craving: ((document.getElementById('habitMotivation') || {}).value || '').trim(),
-        response: ((document.getElementById('habitTinyAction') || {}).value || '').trim(),
-        reward: ((document.getElementById('habitInstantReward') || {}).value || '').trim(),
-        createdAt: new Date().toISOString(),
-        archived: false,
-        customFreq: customFreq,
-        tinyAction: ((document.getElementById('habitTinyAction') || {}).value || '').trim(),
-        linkedIdentityId: (document.getElementById('habitIdentitySelect') || {}).value || '',
-        linkedStackId: (document.getElementById('habitStackSelect') || {}).value || ''
-      };
-      state.habits.push(habit);
-      saveState();
-      habitForm.reset();
-      document.querySelectorAll('.color-dot').forEach(function(d) { d.classList.remove('active'); });
-      var orangeDot = document.querySelector('.color-dot[data-color="#f97316"]');
-      if (orangeDot) orangeDot.classList.add('active');
-      var advSection = document.getElementById('advancedSection');
-      var advToggleEl = document.getElementById('advancedToggle');
-      var advToggleText = document.getElementById('advancedToggleText');
-      var advToggleArrow = document.getElementById('advancedToggleArrow');
-      if (advSection) advSection.classList.remove('open');
-      if (advToggleEl) advToggleEl.classList.remove('open');
-      if (advToggleText) advToggleText.textContent = '展开高级设置';
-      if (advToggleArrow) advToggleArrow.textContent = '▼';
-      document.querySelectorAll('#habitModal .chip').forEach(function(c) { c.classList.remove('selected'); });
-      var customFreqGroup = document.getElementById('customFreqGroup');
-      if (customFreqGroup) customFreqGroup.style.display = 'none';
-      closeModal('habitModal');
-      renderAll();
-    });
-  }
-
-  // 身份表单
-  var identityForm = document.getElementById('identityForm');
-  if (identityForm) {
-    identityForm.addEventListener('submit', function(e) {
-      e.preventDefault();
-      var text = (document.getElementById('identityText') || {}).value.trim();
-      if (!text) return;
-      state.identities.push({
-        id: generateId(),
-        text: text,
-        why: ((document.getElementById('identityWhy') || {}).value || '').trim()
-      });
-      saveState();
-      identityForm.reset();
-      closeModal('identityModal');
-      renderAll();
-    });
-  }
-
-  // 堆叠表单
-  var stackForm = document.getElementById('stackForm');
-  if (stackForm) {
-    stackForm.addEventListener('submit', function(e) {
-      e.preventDefault();
-      var anchor = (document.getElementById('stackAnchor') || {}).value.trim();
-      var newHabit = (document.getElementById('stackNew') || {}).value.trim();
-      if (!anchor || !newHabit) return;
-      var stack = {
-        id: generateId(),
-        anchor: anchor,
-        newHabit: newHabit,
-        cue: ((document.getElementById('stackCue') || {}).value || '').trim(),
-        habitId: (document.getElementById('stackHabitId') || {}).value || '',
-        identityId: (document.getElementById('stackIdentityId') || {}).value || ''
-      };
-      state.stacks.push(stack);
-      if (stack.habitId) {
-        var habit = state.habits.find(function(h) { return h.id === stack.habitId; });
-        if (habit) habit.linkedStackId = stack.id;
-      }
-      if (stack.identityId) {
-        state.habits.forEach(function(h) {
-          if (h.linkedStackId === stack.id) h.linkedIdentityId = stack.identityId;
-        });
-      }
-      saveState();
-      stackForm.reset();
-      closeModal('stackModal');
-      renderAll();
-    });
-  }
-
-  // 循环表单
-  var loopForm = document.getElementById('loopForm');
-  if (loopForm) {
-    loopForm.addEventListener('submit', function(e) {
-      e.preventDefault();
-      var habitId = (document.getElementById('loopHabitId') || {}).value;
-      var habit = state.habits.find(function(h) { return h.id === habitId; });
-      if (!habit) return;
-      habit.cue = ((document.getElementById('loopCue') || {}).value || '').trim();
-      habit.craving = ((document.getElementById('loopCraving') || {}).value || '').trim();
-      habit.response = ((document.getElementById('loopResponse') || {}).value || '').trim();
-      habit.reward = ((document.getElementById('loopReward') || {}).value || '').trim();
-      saveState();
-      closeModal('loopModal');
-      renderHabits();
-    });
-  }
-
-  // 反思保存
-  var saveReflBtn = document.getElementById('saveReflectionBtn');
-  if (saveReflBtn) saveReflBtn.addEventListener('click', saveReflection);
-
-  // 键盘
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeAllModals();
-  });
-
-  // 导出
-  var exportBtn = document.getElementById('exportDataBtn');
-  if (exportBtn) exportBtn.addEventListener('click', exportData);
-
-  // 导入
-  var importBtn = document.getElementById('importDataBtn');
-  if (importBtn) importBtn.addEventListener('click', function() {
-    var fileInput = document.getElementById('importFileInput');
-    if (fileInput) fileInput.click();
-  });
-
-  var importFileInput = document.getElementById('importFileInput');
-  if (importFileInput) {
-    importFileInput.addEventListener('change', function(e) {
-      var file = (e.target.files || [])[0];
-      if (file) {
-        importData(file);
-        e.target.value = '';
-      }
+  if (identitySel) {
+    identitySel.innerHTML = '<option value="">（不关联）</option>';
+    state.identities.forEach(function(id) {
+      var opt = document.createElement('option'); opt.value = id.id; opt.textContent = id.text; identitySel.appendChild(opt);
     });
   }
 }
 
-// ─── 启动 ────────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', init);
+// ─── Habit preview ───────────────────────────────────────────────────────
+function updateHabitPreview() {
+  var name = (document.getElementById('habitName') || {}).value.trim();
+  var cue = (document.getElementById('habitCue') || {}).value.trim();
+  var tiny = (document.getElementById('habitTinyAction') || {}).value.trim();
+  var preview = document.getElementById('habitPreview');
+  var previewText = document.getElementById('habitPreviewText');
+  if (!preview || !previewText) return;
+  if (name || cue || tiny) {
+    preview.classList.add('visible');
+    previewText.textContent = (cue ? '📌 ' + cue : '') + ' → ' + (tiny ? '⚡ ' + tiny : '');
+  } else {
+    preview.classList.remove('visible');
+  }
+}
+document.getElementById('habitName') && document.getElementById('habitName').addEventListener('input', updateHabitPreview);
+document.getElementById('habitCue') && document.getElementById('habitCue').addEventListener('input', updateHabitPreview);
+document.getElementById('habitTinyAction') && document.getElementById('habitTinyAction').addEventListener('input', updateHabitPreview);
+
+// ─── Advanced toggle ────────────────────────────────────────────────────
+document.getElementById('advancedToggle') && document.getElementById('advancedToggle').addEventListener('click', function() {
+  var section = document.getElementById('advancedSection');
+  var text = document.getElementById('advancedToggleText');
+  var arrow = document.getElementById('advancedToggleArrow');
+  var isOpen = section.classList.contains('open');
+  section.classList.toggle('open', !isOpen);
+  text.textContent = isOpen ? '展开更多设置' : '收起更多设置';
+  arrow.textContent = isOpen ? '▼' : '▲';
+});
+
+// Frequency custom toggle
+document.getElementById('habitTarget') && document.getElementById('habitTarget').addEventListener('change', function() {
+  var cfg = document.getElementById('customFreqGroup');
+  if (cfg) cfg.style.display = this.value === 'custom' ? 'block' : 'none';
+});
+
+// Preset chips
+document.addEventListener('click', function(e) {
+  var chip = e.target.closest('.chip[data-val]');
+  if (!chip) return;
+  var parent = chip.parentElement;
+  if (parent.id === 'cueChips') {
+    var input = document.getElementById('habitCue');
+    if (input) { input.value = chip.dataset.val; updateHabitPreview(); }
+  } else if (parent.id === 'tinyActionChips') {
+    var input = document.getElementById('habitTinyAction');
+    if (input) { input.value = chip.dataset.val; updateHabitPreview(); }
+  }
+});
+
+// Color picker
+document.addEventListener('click', function(e) {
+  var dot = e.target.closest('.color-dot');
+  if (!dot) return;
+  document.querySelectorAll('.color-dot').forEach(function(d) { d.classList.remove('active'); });
+  dot.classList.add('active');
+});
+
+// ─── Boot ───────────────────────────────────────────────────────────────
+loadState();
+if (state.settings && state.settings.darkMode) {
+  document.documentElement.setAttribute('data-theme', state.settings.darkMode);
+  var dmBtn = document.getElementById('darkModeBtn');
+  if (dmBtn) dmBtn.textContent = state.settings.darkMode === 'dark' ? '☀️ 浅色模式' : '🌙 深色模式';
+}
+renderAll();
+loadReflection();
