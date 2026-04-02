@@ -1,16 +1,46 @@
 /* =====================
-   原子习惯追踪器 - JS
+   原子习惯追踪器 - JS (增强版)
    ===================== */
 
 // ─── 状态 ───────────────────────────────────────────────────────────────────
 let state = {
-  habits: [],        // { id, name, desc, target, color, cue, craving, response, reward, createdAt }
-  completions: {},   // { 'YYYY-MM-DD': [habitId, ...] }
+  habits: [],       // { id, name, desc, target, color, cue, craving, response, reward, createdAt, archived }
+  completions: {},  // { 'YYYY-MM-DD': [habitId, ...] }
   identities: [],   // { id, text, why }
-  stacks: []         // { id, anchor, newHabit, cue }
+  stacks: []        // { id, anchor, newHabit, cue }
 };
 
-const LS_KEY = 'atomic_habits_v1';
+const LS_KEY = 'atomic_habits_v2';
+const REFLECTION_KEY = 'atomic_habits_reflection';
+
+// Habit tips pool
+const HABIT_TIPS = [
+  '💡 提示：把习惯和特定时间和地点绑定，成功率提升2倍！',
+  '💡 提示：从极小的行为开始（1个俯卧撑！），让阻力接近零。',
+  '💡 提示：给每个习惯完成后立即庆祝，大脑会记住这个快乐的关联！',
+  '💡 提示：把手机放到另一个房间，减少干扰，提升专注力。',
+  '💡 提示：习惯堆叠 = "在 [旧习惯] 之后，我将 [新习惯]"，利用已有习惯带动新习惯。',
+  '💡 提示：睡前把第二天要用的东西（运动服、书本）准备好，减少启动阻力。',
+  '💡 提示：让好习惯显而易见——把跑鞋放在门口，把书放在枕头边。',
+  '💡 提示：习惯回路 = 提示→渴望→反应→奖励，缺一不可！',
+  '💡 提示：连续做7天就会形成初步习惯，别打断链条！🔥',
+  '💡 提示：每晚睡前回顾：今天哪个习惯做得最好？明天如何改进？'
+];
+
+// Example habits
+const EXAMPLE_HABITS = [
+  { name: '晨跑 20 分钟', desc: '早起跑步，保持活力', color: '#10b981' },
+  { name: '阅读 30 分钟', desc: '每天读一本好书', color: '#3b82f6' },
+  { name: '写日记 10 分钟', desc: '记录一天的想法', color: '#8b5cf6' }
+];
+
+// Milestone data
+const MILESTONES = [
+  { days: 7, icon: '🎖️', label: '7天里程碑', sub: '初步习惯已形成，继续加油！' },
+  { days: 21, icon: '🏅', label: '21天里程碑', sub: '21天养成习惯，你做到了！' },
+  { days: 66, icon: '🏆', label: '66天里程碑', sub: '66天 = 真正的习惯养成！' },
+  { days: 100, icon: '👑', label: '100天里程碑', sub: '百日坚持，卓越非凡！' }
+];
 
 // ─── 初始化 ────────────────────────────────────────────────────────────────────
 function init() {
@@ -19,13 +49,23 @@ function init() {
   animateCompoundBars();
   setupEventListeners();
   updateTodayDate();
+  loadReflection();
+  rotateHabitTip();
+  startTipRotation();
 }
 
 // ─── 存储 ─────────────────────────────────────────────────────────────────
 function loadState() {
   try {
     const saved = localStorage.getItem(LS_KEY);
-    if (saved) state = JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Migrate v1 state
+      if (parsed.habits && !parsed.habits[0]?.hasOwnProperty('archived')) {
+        parsed.habits = parsed.habits.map(h => ({ ...h, archived: false }));
+      }
+      state = parsed;
+    }
   } catch (e) { console.warn('状态加载失败', e); }
 }
 
@@ -99,7 +139,250 @@ function scoreStars(completed, total) {
   return '';
 }
 
-// ─── 复利效应动画 ────────────────────────────────────────────────────────────────
+function getActiveHabits() {
+  return state.habits.filter(h => !h.archived);
+}
+
+function getArchivedHabits() {
+  return state.habits.filter(h => h.archived);
+}
+
+// ─── 每日反思 ─────────────────────────────────────────────────────────────
+function loadReflection() {
+  const saved = localStorage.getItem(REFLECTION_KEY + '_' + today());
+  const el = document.getElementById('reflectionText');
+  const savedEl = document.getElementById('reflectionSaved');
+  if (el && saved) {
+    el.value = saved;
+    if (savedEl) savedEl.textContent = '✓ 已保存';
+  }
+}
+
+function saveReflection() {
+  const text = document.getElementById('reflectionText')?.value.trim() || '';
+  const savedEl = document.getElementById('reflectionSaved');
+  localStorage.setItem(REFLECTION_KEY + '_' + today(), text);
+  if (savedEl) {
+    savedEl.textContent = '✓ 已保存';
+    setTimeout(() => { if (savedEl) savedEl.textContent = ''; }, 2000);
+  }
+}
+
+// ─── 习惯提示轮换 ──────────────────────────────────────────────────────────
+let tipIndex = 0;
+function rotateHabitTip() {
+  const el = document.getElementById('habitTipText');
+  if (el) {
+    el.textContent = HABIT_TIPS[tipIndex % HABIT_TIPS.length];
+  }
+}
+function startTipRotation() {
+  setInterval(() => {
+    tipIndex++;
+    const el = document.getElementById('habitTipText');
+    if (el && document.getElementById('habitModal')?.classList.contains('open')) {
+      el.textContent = HABIT_TIPS[tipIndex % HABIT_TIPS.length];
+    }
+  }, 5000);
+}
+
+// ─── 进度仪表盘 ───────────────────────────────────────────────────────────
+function getWeekDays() {
+  const days = [];
+  const now = new Date();
+  const dayOfWeek = now.getDay() || 7;
+  for (let i = 1; i <= dayOfWeek; i++) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - (dayOfWeek - i));
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const label = d.toLocaleDateString('zh-CN', { weekday: 'short', day: 'numeric' });
+    const isToday = dateStr === today();
+    const completedCount = getActiveHabits().filter(h => (state.completions[dateStr] || []).includes(h.id)).length;
+    const totalCount = getActiveHabits().length;
+    const pct = totalCount > 0 ? completedCount / totalCount : 0;
+    days.push({ dateStr, label, completedCount, totalCount, pct, isToday });
+  }
+  return days;
+}
+
+function getWeeklyCompletionRate() {
+  const weekDays = getWeekDays();
+  if (weekDays.length === 0) return 0;
+  const totalPct = weekDays.reduce((sum, d) => sum + d.pct, 0);
+  return Math.round((totalPct / weekDays.length) * 100);
+}
+
+function getMonthlyBestHabit() {
+  const now = new Date();
+  const monthStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const habitCounts = {};
+  getActiveHabits().forEach(h => { habitCounts[h.id] = 0; });
+  Object.keys(state.completions).forEach(date => {
+    if (date.startsWith(monthStr)) {
+      (state.completions[date] || []).forEach(id => {
+        if (habitCounts[id] !== undefined) habitCounts[id]++;
+      });
+    }
+  });
+  let best = null;
+  let bestStreak = 0;
+  getActiveHabits().forEach(h => {
+    const streak = getStreak(h.id);
+    if (streak > bestStreak) {
+      bestStreak = streak;
+      best = h;
+    }
+  });
+  return best;
+}
+
+function renderDashboard() {
+  const weekDays = getWeekDays();
+  const weeklyPct = getWeeklyCompletionRate();
+  const bestHabit = getMonthlyBestHabit();
+
+  // Progress ring
+  const ring = document.getElementById('progressRing');
+  const pctEl = document.getElementById('weeklyPct');
+  if (ring) {
+    const circumference = 2 * Math.PI * 52; // ≈ 326.73
+    const offset = circumference * (1 - weeklyPct / 100);
+    ring.style.strokeDashoffset = offset;
+    if (pctEl) pctEl.textContent = weeklyPct + '%';
+  }
+
+  // Weekly bar chart
+  const barChart = document.getElementById('weeklyBarChart');
+  if (barChart) {
+    const dayLabels = ['一', '二', '三', '四', '五', '六', '日'];
+    const fullWeek = [];
+    const now = new Date();
+    const dayOfWeek = now.getDay() || 7;
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - (dayOfWeek - i));
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      const isToday = dateStr === today();
+      const completedCount = getActiveHabits().filter(h => (state.completions[dateStr] || []).includes(h.id)).length;
+      const totalCount = getActiveHabits().length;
+      const pct = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+      fullWeek.push({ dateStr, label: dayLabels[i-1], pct, isToday, completedCount, totalCount });
+    }
+
+    barChart.innerHTML = fullWeek.map(d => {
+      const fillClass = d.pct === 0 ? 'zero' : d.pct < 100 ? 'partial' : '';
+      return `
+        <div class="wbar-wrap">
+          <div class="wbar-track">
+            <div class="wbar-fill ${fillClass}" style="height:${Math.max(d.pct, 4)}%"></div>
+          </div>
+          <div class="wbar-label" style="color:${d.isToday ? 'var(--accent)' : 'var(--text-muted)'};font-weight:${d.isToday ? '700' : '600'}">${d.label}</div>
+        </div>`;
+    }).join('');
+  }
+
+  // Best habit
+  const bestEl = document.getElementById('bestHabitDisplay');
+  if (bestEl) {
+    if (!bestHabit || getStreak(bestHabit.id) === 0) {
+      bestEl.innerHTML = `<div class="best-habit-empty">暂无数据<br><span>坚持完成习惯解锁此成就！</span></div>`;
+    } else {
+      const streak = getStreak(bestHabit.id);
+      bestEl.innerHTML = `
+        <div class="best-trophy">🏆</div>
+        <div class="best-habit-name" style="color:${bestHabit.color || 'var(--accent)'}">${bestHabit.name}</div>
+        <div class="best-habit-streak">🔥 ${streak} 天连续</div>
+        <div class="best-habit-meta">本月坚持最久</div>`;
+    }
+  }
+}
+
+// ─── 彩屑庆祝动画 ─────────────────────────────────────────────────────────
+function launchConfetti() {
+  const canvas = document.getElementById('confettiCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const particles = [];
+  const colors = ['#f97316', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#eab308', '#ef4444'];
+
+  for (let i = 0; i < 120; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: -20 - Math.random() * 100,
+      vx: (Math.random() - 0.5) * 4,
+      vy: Math.random() * 3 + 2,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      size: Math.random() * 8 + 4,
+      rotation: Math.random() * 360,
+      rotationSpeed: (Math.random() - 0.5) * 10,
+      shape: Math.random() > 0.5 ? 'rect' : 'circle',
+      opacity: 1
+    });
+  }
+
+  let frame = 0;
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.08;
+      p.rotation += p.rotationSpeed;
+      p.opacity = Math.max(0, 1 - p.y / canvas.height);
+
+      ctx.save();
+      ctx.globalAlpha = p.opacity;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rotation * Math.PI / 180);
+      ctx.fillStyle = p.color;
+      if (p.shape === 'rect') {
+        ctx.fillRect(-p.size/2, -p.size/4, p.size, p.size/2);
+      } else {
+        ctx.beginPath();
+        ctx.arc(0, 0, p.size/2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    });
+
+    frame++;
+    if (frame < 180) {
+      requestAnimationFrame(animate);
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+  animate();
+}
+
+function celebrateMilestone(days) {
+  const milestone = MILESTONES.find(m => m.days === days);
+  if (!milestone) return;
+
+  // Show banner
+  const habitsList = document.getElementById('habitsList');
+  if (habitsList) {
+    const banner = document.createElement('div');
+    banner.className = 'milestone-banner';
+    banner.id = 'milestoneBanner';
+    banner.innerHTML = `
+      <div class="milestone-banner-icon">${milestone.icon}</div>
+      <div class="milestone-banner-text">${milestone.label}达成！🎉</div>
+      <div class="milestone-banner-sub">${milestone.sub}</div>`;
+    habitsList.parentNode.insertBefore(banner, habitsList);
+    setTimeout(() => {
+      const b = document.getElementById('milestoneBanner');
+      if (b) b.remove();
+    }, 5000);
+  }
+
+  launchConfetti();
+}
+
+// ─── 复利效应动画 ────────────────────────────────────────────────────────────
 function animateCompoundBars() {
   setTimeout(() => {
     const neg = document.getElementById('compoundNegative');
@@ -111,10 +394,12 @@ function animateCompoundBars() {
 
 // ─── 渲染全部 ───────────────────────────────────────────────────────────────
 function renderAll() {
+  renderDashboard();
   renderScorecard();
   renderIdentities();
   renderStacks();
   renderHabits();
+  renderArchivedSection();
 }
 
 // ─── 渲染：得分卡 ────────────────────────────────────────────────────────
@@ -126,11 +411,21 @@ function renderScorecard() {
 
   if (!grid) return;
 
-  if (state.habits.length === 0) {
+  const activeHabits = getActiveHabits();
+
+  if (activeHabits.length === 0) {
     grid.innerHTML = `
       <div class="empty-state" style="grid-column:1/-1">
-        <div class="empty-state-icon">📋</div>
-        <p>添加你的第一个习惯开始追踪</p>
+        <span class="empty-state-icon">📋</span>
+        <h3>开始你的习惯之旅</h3>
+        <p>添加你的第一个习惯，开启自我提升之路</p>
+        <div class="example-habits">
+          ${EXAMPLE_HABITS.map(ex => `
+            <button class="example-habit-btn" onclick="addExampleHabit('${ex.name}','${ex.desc}','${ex.color}')">
+              + ${ex.name}
+            </button>
+          `).join('')}
+        </div>
       </div>`;
     scoreEl.textContent = '0';
     totalEl.textContent = '0';
@@ -138,7 +433,7 @@ function renderScorecard() {
     return;
   }
 
-  grid.innerHTML = state.habits.map(habit => {
+  grid.innerHTML = activeHabits.map(habit => {
     const done = isCompleted(habit.id);
     return `
       <div class="scorecard-item" data-id="${habit.id}">
@@ -150,10 +445,27 @@ function renderScorecard() {
       </div>`;
   }).join('');
 
-  const completedToday = state.habits.filter(h => isCompleted(h.id)).length;
+  const completedToday = activeHabits.filter(h => isCompleted(h.id)).length;
   scoreEl.textContent = completedToday;
-  totalEl.textContent = state.habits.length;
-  starsEl.textContent = scoreStars(completedToday, state.habits.length);
+  totalEl.textContent = activeHabits.length;
+  starsEl.textContent = scoreStars(completedToday, activeHabits.length);
+}
+
+// ─── 快速添加示例习惯 ─────────────────────────────────────────────────────
+function addExampleHabit(name, desc, color) {
+  const habit = {
+    id: generateId(),
+    name,
+    desc,
+    target: 7,
+    color,
+    cue: '', craving: '', response: '', reward: '',
+    createdAt: new Date().toISOString(),
+    archived: false
+  };
+  state.habits.push(habit);
+  saveState();
+  renderAll();
 }
 
 // ─── 渲染：身份认同 ──────────────────────────────────────────────────────
@@ -214,22 +526,38 @@ function renderHabits() {
   const list = document.getElementById('habitsList');
   if (!list) return;
 
-  if (state.habits.length === 0) {
+  const activeHabits = getActiveHabits();
+
+  if (activeHabits.length === 0) {
     list.innerHTML = `
       <div class="empty-state">
-        <div class="empty-state-icon">🎯</div>
-        <p>还没有习惯。点击"+ 添加习惯"开始吧！</p>
+        <span class="empty-state-icon">🎯</span>
+        <h3>还没有习惯</h3>
+        <p>点击"+ 添加习惯"开始吧！</p>
+        <div class="example-habits">
+          ${EXAMPLE_HABITS.map(ex => `
+            <button class="example-habit-btn" onclick="addExampleHabit('${ex.name}','${ex.desc}','${ex.color}')">
+              + ${ex.name}
+            </button>
+          `).join('')}
+        </div>
       </div>`;
     return;
   }
 
-  list.innerHTML = state.habits.map(habit => {
+  list.innerHTML = activeHabits.map(habit => {
     const streak = getStreak(habit.id);
     const last30 = getLast30Days(habit.id);
     const streakClass = streak > 0 ? '' : 'streak-zero';
 
+    // Milestone class for streak days
+    const milestoneClass = streak >= 100 ? 'milestone-100' : streak >= 66 ? 'milestone-66' : streak >= 21 ? 'milestone-21' : streak >= 7 ? 'milestone-7' : '';
+    const milestoneBadge = streak >= 7 ? MILESTONES.find(m => m.days === streak || (streak >= m.days && (MILESTONES[MILESTONES.findIndex(x=>x.days===m.days)+1]?.days > streak || !MILESTONES[MILESTONES.findIndex(x=>x.days===m.days)+1]))) : null;
+    // Show badge only on exact milestone
+    const exactMilestone = MILESTONES.find(m => m.days === streak);
+
     return `
-      <div class="habit-card" data-habit="${habit.id}">
+      <div class="habit-card" data-habit="${habit.id}" style="--habit-color:${habit.color || 'var(--accent)'}">
         <div class="habit-card-header">
           <div class="habit-title-row">
             <div class="habit-dot" style="background:${habit.color || '#f97316'}"></div>
@@ -239,7 +567,9 @@ function renderHabits() {
             </div>
           </div>
           <div class="habit-actions">
-            <span class="streak-badge ${streakClass}">🔥 ${streak} 天连续</span>
+            ${exactMilestone ? `<span class="milestone-badge milestone-${streak}">${exactMilestone.icon}</span>` : ''}
+            <span class="streak-badge ${streakClass}">🔥 ${streak} 天</span>
+            <button class="btn-archive" onclick="archiveHabit('${habit.id}')" title="归档习惯">📦</button>
             <button class="btn-icon" onclick="deleteHabit('${habit.id}')" title="删除习惯" style="font-size:0.9rem;width:30px;height:30px">🗑️</button>
           </div>
         </div>
@@ -276,14 +606,77 @@ function renderHabits() {
             <span>${streak > 0 ? '🔥 别打断链！' : '今天开始你的链！'}</span>
           </div>
           <div class="streak-grid">
-            ${last30.map(day => `
-              <div class="streak-day ${day.completed ? 'completed' : ''} ${day.isToday ? 'today' : ''}"
-                   title="${day.date}${day.completed ? ' ✓' : ''}"></div>
-            `).join('')}
+            ${last30.map((day, idx) => {
+              let dayClass = 'streak-day';
+              if (day.completed) dayClass += ' completed';
+              if (day.isToday) dayClass += ' today';
+              // Check if this day is a milestone day for the overall streak
+              const daysFromEnd = 29 - idx;
+              if (day.completed && streak > 0 && (streak - daysFromEnd) > 0) {
+                const streakOnDay = streak - daysFromEnd;
+                if (streakOnDay === 7) dayClass += ' milestone-7';
+                else if (streakOnDay === 21) dayClass += ' milestone-21';
+                else if (streakOnDay === 66) dayClass += ' milestone-66';
+                else if (streakOnDay === 100) dayClass += ' milestone-100';
+              }
+              return `<div class="${dayClass}" title="${day.date}${day.completed ? ' ✓' : ''}"></div>`;
+            }).join('')}
           </div>
         </div>
       </div>`;
   }).join('');
+}
+
+// ─── 渲染：归档区域 ───────────────────────────────────────────────────────
+function renderArchivedSection() {
+  const section = document.getElementById('archivedSection');
+  const list = document.getElementById('archivedList');
+  if (!section || !list) return;
+
+  const archived = getArchivedHabits();
+  if (archived.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = 'block';
+
+  list.innerHTML = archived.map(habit => `
+    <div class="habit-card archived" data-habit="${habit.id}" style="--habit-color:${habit.color || 'var(--accent)'}">
+      <div class="habit-card-header">
+        <div class="habit-title-row">
+          <div class="habit-dot" style="background:${habit.color || '#f97316'};opacity:0.5"></div>
+          <div>
+            <div class="habit-name" style="opacity:0.7">${habit.name}</div>
+            ${habit.desc ? `<div class="habit-desc">${habit.desc}</div>` : ''}
+          </div>
+        </div>
+        <div class="habit-actions">
+          <button class="btn-unarchive" onclick="unarchiveHabit('${habit.id}')">↩️ 恢复</button>
+          <button class="btn-delete" onclick="deleteHabit('${habit.id}')">🗑️</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── 归档 / 恢复 ───────────────────────────────────────────────────────────
+function archiveHabit(habitId) {
+  const habit = state.habits.find(h => h.id === habitId);
+  if (habit) {
+    habit.archived = true;
+    saveState();
+    renderAll();
+  }
+}
+
+function unarchiveHabit(habitId) {
+  const habit = state.habits.find(h => h.id === habitId);
+  if (habit) {
+    habit.archived = false;
+    saveState();
+    renderAll();
+  }
 }
 
 // ─── 切换完成状态 ───────────────────────────────────────────────────────
@@ -291,11 +684,19 @@ function toggleHabit(habitId) {
   const d = today();
   if (!state.completions[d]) state.completions[d] = [];
   const idx = state.completions[d].indexOf(habitId);
-  if (idx >= 0) {
+  const wasCompleted = idx >= 0;
+
+  if (wasCompleted) {
     state.completions[d].splice(idx, 1);
   } else {
     state.completions[d].push(habitId);
+    // Check for milestone
+    const newStreak = getStreak(habitId);
+    if (MILESTONES.some(m => m.days === newStreak)) {
+      celebrateMilestone(newStreak);
+    }
   }
+
   saveState();
   renderAll();
 }
@@ -329,6 +730,9 @@ function deleteStack(id) {
 // ─── 弹窗：打开/关闭 ───────────────────────────────────────────────────────
 function openModal(id) {
   document.getElementById(id)?.classList.add('open');
+  if (id === 'habitModal') {
+    rotateHabitTip();
+  }
 }
 function closeModal(id) {
   document.getElementById(id)?.classList.remove('open');
@@ -348,6 +752,17 @@ function openLoopModal(habitId) {
   document.getElementById('loopResponse').value = habit.response || '';
   document.getElementById('loopReward').value = habit.reward || '';
   openModal('loopModal');
+}
+
+// ─── 归档区域折叠 ─────────────────────────────────────────────────────────
+let archivedExpanded = false;
+function toggleArchived() {
+  const list = document.getElementById('archivedList');
+  const btn = document.getElementById('toggleArchivedBtn');
+  if (!list) return;
+  archivedExpanded = !archivedExpanded;
+  list.style.display = archivedExpanded ? 'flex' : 'none';
+  if (btn) btn.textContent = archivedExpanded ? '收起' : '展开';
 }
 
 // ─── 事件监听 ─────────────────────────────────────────────────────────
@@ -376,6 +791,7 @@ function setupEventListeners() {
   document.getElementById('addHabitBtn')?.addEventListener('click', () => openModal('habitModal'));
   document.getElementById('addIdentityBtn')?.addEventListener('click', () => openModal('identityModal'));
   document.getElementById('addStackBtn')?.addEventListener('click', () => openModal('stackModal'));
+  document.getElementById('toggleArchivedBtn')?.addEventListener('click', toggleArchived);
 
   // 弹窗遮罩关闭
   document.querySelectorAll('.modal-backdrop').forEach(el => {
@@ -402,7 +818,7 @@ function setupEventListeners() {
   // 习惯表单
   document.getElementById('habitForm')?.addEventListener('submit', (e) => {
     e.preventDefault();
-    const name = document.getElementById('habitName').value.trim();
+    const name = document.getElementByById('habitName').value.trim();
     if (!name) return;
     const activeColor = document.querySelector('.color-dot.active');
     const habit = {
@@ -415,7 +831,8 @@ function setupEventListeners() {
       craving: document.getElementById('habitCraving').value.trim(),
       response: document.getElementById('habitResponse').value.trim(),
       reward: document.getElementById('habitReward').value.trim(),
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      archived: false
     };
     state.habits.push(habit);
     saveState();
@@ -475,11 +892,14 @@ function setupEventListeners() {
     renderHabits();
   });
 
+  // 每日反思保存
+  document.getElementById('saveReflectionBtn')?.addEventListener('click', saveReflection);
+
   // 键盘快捷键
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeAllModals();
   });
 }
 
-// ─── 启动 ───────────────────────────────────────────────────────────────────
+// ─── 启动 ────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', init);
