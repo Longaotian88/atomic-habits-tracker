@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="zh-CN" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Atomic Habits Tracker</title>
+  <title>原子习惯追踪器</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -15,11 +15,11 @@
     <div class="container header-inner">
       <div class="logo">
         <span class="logo-icon">⚛️</span>
-        <span class="logo-text">Atomic Habits</span>
+        <span class="logo-text">原子习惯</span>
       </div>
       <div class="header-actions">
-        <button class="btn-icon" id="darkModeToggle" title="Toggle dark mode">🌙</button>
-        <button class="btn btn-primary" id="addHabitBtn">+ Add Habit</button>
+        <button class="btn-icon" id="darkModeToggle" title="切换深色模式">🌙</button>
+        <button class="btn btn-primary" id="addHabitBtn">+ 添加习惯</button>
       </div>
     </div>
   </header>
@@ -29,30 +29,30 @@
     <div class="container">
       <div class="compound-effect">
         <div class="compound-left">
-          <div class="compound-label negative">1% worse every day</div>
+          <div class="compound-label negative">每天差1%</div>
           <div class="compound-bar negative">
             <div class="compound-fill negative" id="compoundNegative"></div>
           </div>
           <div class="compound-result negative">
             <span class="big-num" id="negFinal">0.99</span>
-            <span class="big-label">365 days later</span>
+            <span class="big-label">365天后</span>
           </div>
-          <div class="decline-note">≈ 0.03 → near zero</div>
+          <div class="decline-note">≈ 0.03 → 接近于零</div>
         </div>
         <div class="compound-vs">VS</div>
         <div class="compound-right">
-          <div class="compound-label positive">1% better every day</div>
+          <div class="compound-label positive">每天好1%</div>
           <div class="compound-bar positive">
             <div class="compound-fill positive" id="compoundPositive"></div>
           </div>
           <div class="compound-result positive">
             <span class="big-num" id="posFinal">1.01</span>
-            <span class="big-label">365 days later</span>
+            <span class="big-label">365天后</span>
           </div>
-          <div class="growth-note">≈ 37.78 → 37× growth</div>
+          <div class="growth-note">≈ 37.78 → 37倍增长</div>
         </div>
       </div>
-      <p class="hero-quote">"You should be more concerned with your current trajectory than with your current results." — James Clear</p>
+      <p class="hero-quote">"你应该更关心你现在的轨迹，而不是你现在的结果。" — 詹姆斯·克利尔</p>
     </div>
   </section>
 
@@ -60,7 +60,7 @@
   <section class="section">
     <div class="container">
       <div class="section-header">
-        <h2>📋 Today's Scorecard — <span id="todayDate"></span></h2>
+        <h2>📋 今日得分 — <span id="todayDate"></span></h2>
         <div class="score-display">
           <span id="dailyScore">0</span> / <span id="totalHabits">0</span>
           <span class="score-stars" id="scoreStars"></span>
@@ -76,9 +76,9 @@
       <div class="tip-card">
         <div class="tip-icon">🏠</div>
         <div class="tip-content">
-          <h3>Environment Design</h3>
-          <p><strong>Make good habits obvious:</strong> Put your running shoes by the door. Keep a book on your pillow. Place a water glass next to your desk.</p>
-          <p><strong>Make bad habits invisible:</strong> Hide your phone in a drawer. Remove junk food from your desk. Use website blockers.</p>
+          <h3>环境设计</h3>
+          <p><strong>让好习惯显而易见：</strong>把跑鞋放在门口。把书放在枕头上。在办公桌旁放一杯水。</p>
+          <p><strong>让坏习惯看不见：</strong>把手机藏进抽屉。把垃圾食品从桌上拿走。使用网站屏蔽软件。</p>
         </div>
       </div>
     </div>
@@ -88,8 +88,8 @@
   <section class="section">
     <div class="container">
       <div class="section-header">
-        <h2>🪪 Identity-Based Habits</h2>
-        <button class="btn btn-secondary btn-sm" id="addIdentityBtn">+ Add Identity</button>
+        <h2>🪪 身份认同习惯</h2>
+        <button class="btn btn-secondary btn-sm" id="addIdentityBtn">+ 添加身份</button>
       </div>
       <div class="identity-grid" id="identityGrid"></div>
     </div>
@@ -99,10 +99,10 @@
   <section class="section">
     <div class="container">
       <div class="section-header">
-        <h2>🔗 Habit Stacking</h2>
-        <button class="btn btn-secondary btn-sm" id="addStackBtn">+ Add Stack</button>
+        <h2>🔗 习惯堆叠</h2>
+        <button class="btn btn-secondary btn-sm" id="addStackBtn">+ 添加堆叠</button>
       </div>
-      <p class="section-subtitle">"After [CURRENT HABIT], I will [NEW HABIT]"</p>
+      <p class="section-subtitle">"在 [现有习惯] 之后，我将 [新习惯]"</p>
       <div class="stacks-grid" id="stacksGrid"></div>
     </div>
   </section>
@@ -110,31 +110,31 @@
   <!-- Habit Loop Explanation -->
   <section class="section section-loop">
     <div class="container">
-      <h2>🔄 The Habit Loop</h2>
-      <p class="section-subtitle">Every habit follows this cycle. Identify each part to build better habits.</p>
+      <h2>🔄 习惯循环</h2>
+      <p class="section-subtitle">每个习惯都遵循这个循环。识别每个部分，以建立更好的习惯。</p>
       <div class="loop-diagram">
         <div class="loop-step">
           <div class="loop-icon">👁️</div>
-          <div class="loop-name">Cue</div>
-          <div class="loop-desc">Trigger that initiates the behavior</div>
+          <div class="loop-name">提示</div>
+          <div class="loop-desc">触发行为的信号</div>
         </div>
         <div class="loop-arrow">→</div>
         <div class="loop-step">
           <div class="loop-icon">🔥</div>
-          <div class="loop-name">Craving</div>
-          <div class="loop-desc">The motivational force behind every habit</div>
+          <div class="loop-name">渴望</div>
+          <div class="loop-desc">每个习惯背后的动力</div>
         </div>
         <div class="loop-arrow">→</div>
         <div class="loop-step">
           <div class="loop-icon">⚡</div>
-          <div class="loop-name">Response</div>
-          <div class="loop-desc">The actual habit you perform</div>
+          <div class="loop-name">反应</div>
+          <div class="loop-desc">你实际执行的习惯</div>
         </div>
         <div class="loop-arrow">→</div>
         <div class="loop-step">
           <div class="loop-icon">🎉</div>
-          <div class="loop-name">Reward</div>
-          <div class="loop-desc">The benefit you gain from the action</div>
+          <div class="loop-name">奖励</div>
+          <div class="loop-desc">你从行动中获得的益处</div>
         </div>
       </div>
     </div>
@@ -144,7 +144,7 @@
   <section class="section">
     <div class="container">
       <div class="section-header">
-        <h2>🎯 My Habits</h2>
+        <h2>🎯 我的习惯</h2>
       </div>
       <div class="habits-list" id="habitsList"></div>
     </div>
@@ -156,12 +156,12 @@
       <div class="tiny-card">
         <div class="tiny-icon">🐣</div>
         <div class="tiny-content">
-          <h3>Tiny Habits — BJ Fogg's Method</h3>
+          <h3>微习惯 — BJ·福格方法</h3>
           <ul>
-            <li><strong>Make it tiny:</strong> Want to exercise? Do 1 push-up. Want to read? Read 1 page.</li>
-            <li><strong>Find an anchor:</strong> Attach your new habit to something you already do daily.</li>
-            <li><strong>Celebrate immediately:</strong> Say "I did it!" out loud right after. It trains your brain.</li>
-            <li><strong>Grow organically:</strong> Once the tiny habit feels automatic, make it slightly bigger.</li>
+            <li><strong>把它变小：</strong>想运动？做1个俯卧撑。想读书？读1页书。</li>
+            <li><strong>找一个锚点：</strong>把你的新习惯附加到你每天已经在做的事情上。</li>
+            <li><strong>立刻庆祝：</strong>完成后立刻大声说"我做到了！"这会训练你的大脑。</li>
+            <li><strong>自然成长：</strong>当微习惯变得自动化后，再让它稍微大一点。</li>
           </ul>
         </div>
       </div>
@@ -174,49 +174,49 @@
     <div class="modal-backdrop"></div>
     <div class="modal-box">
       <div class="modal-header">
-        <h3>Add New Habit</h3>
+        <h3>添加新习惯</h3>
         <button class="btn-icon modal-close">&times;</button>
       </div>
       <form id="habitForm">
         <div class="form-group">
-          <label>Habit Name</label>
-          <input type="text" id="habitName" placeholder="e.g., Morning run" required>
+          <label>习惯名称</label>
+          <input type="text" id="habitName" placeholder="例如：晨跑" required>
         </div>
         <div class="form-group">
-          <label>Description (optional)</label>
-          <input type="text" id="habitDesc" placeholder="Brief description">
+          <label>描述（可选）</label>
+          <input type="text" id="habitDesc" placeholder="简短描述">
         </div>
         <div class="form-group">
-          <label>Target (times per week)</label>
+          <label>目标（每周次数）</label>
           <select id="habitTarget">
-            <option value="7">Daily (7× per week)</option>
-            <option value="5">5× per week</option>
-            <option value="3">3× per week</option>
-            <option value="1">1× per week</option>
+            <option value="7">每天（每周7次）</option>
+            <option value="5">每周5次</option>
+            <option value="3">每周3次</option>
+            <option value="1">每周1次</option>
           </select>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Cue (Trigger)</label>
-            <input type="text" id="habitCue" placeholder="e.g., After I pour my morning coffee">
+            <label>提示（触发）</label>
+            <input type="text" id="habitCue" placeholder="例如：在我倒完早咖啡之后">
           </div>
           <div class="form-group">
-            <label>Craving (Motivation)</label>
-            <input type="text" id="habitCraving" placeholder="e.g., I want to feel energized">
+            <label>渴望（动机）</label>
+            <input type="text" id="habitCraving" placeholder="例如：我想感到精力充沛">
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Response (Action)</label>
-            <input type="text" id="habitResponse" placeholder="e.g., I will run for 20 minutes">
+            <label>反应（行动）</label>
+            <input type="text" id="habitResponse" placeholder="例如：我将跑步20分钟">
           </div>
           <div class="form-group">
-            <label>Reward (Benefit)</label>
-            <input type="text" id="habitReward" placeholder="e.g., I feel accomplished">
+            <label>奖励（益处）</label>
+            <input type="text" id="habitReward" placeholder="例如：我感到很有成就感">
           </div>
         </div>
         <div class="form-group">
-          <label>Color</label>
+          <label>颜色</label>
           <div class="color-picker" id="colorPicker">
             <span class="color-dot active" data-color="#f97316" style="background:#f97316"></span>
             <span class="color-dot" data-color="#3b82f6" style="background:#3b82f6"></span>
@@ -228,8 +228,8 @@
           </div>
         </div>
         <div class="form-actions">
-          <button type="button" class="btn btn-secondary modal-close">Cancel</button>
-          <button type="submit" class="btn btn-primary">Add Habit</button>
+          <button type="button" class="btn btn-secondary modal-close">取消</button>
+          <button type="submit" class="btn btn-primary">添加习惯</button>
         </div>
       </form>
     </div>
@@ -240,21 +240,21 @@
     <div class="modal-backdrop"></div>
     <div class="modal-box">
       <div class="modal-header">
-        <h3>Add Identity Habit</h3>
+        <h3>添加身份习惯</h3>
         <button class="btn-icon modal-close">&times;</button>
       </div>
       <form id="identityForm">
         <div class="form-group">
-          <label>Identity Statement</label>
-          <input type="text" id="identityText" placeholder='e.g., "I am a runner"' required>
+          <label>身份宣言</label>
+          <input type="text" id="identityText" placeholder='例如："我是一名跑者"' required>
         </div>
         <div class="form-group">
-          <label>Why does this matter to you?</label>
-          <textarea id="identityWhy" placeholder="Reasoning..." rows="3"></textarea>
+          <label>为什么这对你很重要？</label>
+          <textarea id="identityWhy" placeholder="理由……" rows="3"></textarea>
         </div>
         <div class="form-actions">
-          <button type="button" class="btn btn-secondary modal-close">Cancel</button>
-          <button type="submit" class="btn btn-primary">Add Identity</button>
+          <button type="button" class="btn btn-secondary modal-close">取消</button>
+          <button type="submit" class="btn btn-primary">添加身份</button>
         </div>
       </form>
     </div>
@@ -265,25 +265,25 @@
     <div class="modal-backdrop"></div>
     <div class="modal-box">
       <div class="modal-header">
-        <h3>Add Habit Stack</h3>
+        <h3>添加习惯堆叠</h3>
         <button class="btn-icon modal-close">&times;</button>
       </div>
       <form id="stackForm">
         <div class="form-group">
-          <label>Anchor (What I already do)</label>
-          <input type="text" id="stackAnchor" placeholder="e.g., After I pour my morning coffee" required>
+          <label>锚点（我已经做的事）</label>
+          <input type="text" id="stackAnchor" placeholder="例如：在我倒完早咖啡之后" required>
         </div>
         <div class="form-group">
-          <label>New Habit (What I'll do)</label>
-          <input type="text" id="stackNew" placeholder="e.g., I will write in my journal" required>
+          <label>新习惯（我要做的事）</label>
+          <input type="text" id="stackNew" placeholder="例如：我将写日记" required>
         </div>
         <div class="form-group">
-          <label>Small Cue (optional)</label>
-          <input type="text" id="stackCue" placeholder="e.g., Put pen next to coffee maker">
+          <label>小提示（可选）</label>
+          <input type="text" id="stackCue" placeholder="例如：把笔放在咖啡机旁边">
         </div>
         <div class="form-actions">
-          <button type="button" class="btn btn-secondary modal-close">Cancel</button>
-          <button type="submit" class="btn btn-primary">Add Stack</button>
+          <button type="button" class="btn btn-secondary modal-close">取消</button>
+          <button type="submit" class="btn btn-primary">添加堆叠</button>
         </div>
       </form>
     </div>
@@ -294,30 +294,30 @@
     <div class="modal-backdrop"></div>
     <div class="modal-box">
       <div class="modal-header">
-        <h3>Edit Habit Loop</h3>
+        <h3>编辑习惯循环</h3>
         <button class="btn-icon modal-close">&times;</button>
       </div>
       <form id="loopForm">
         <input type="hidden" id="loopHabitId">
         <div class="form-group">
-          <label>Cue (Trigger)</label>
-          <input type="text" id="loopCue" placeholder="What triggers this habit?">
+          <label>提示（触发）</label>
+          <input type="text" id="loopCue" placeholder="什么触发了这个习惯？">
         </div>
         <div class="form-group">
-          <label>Craving (Motivation)</label>
-          <input type="text" id="loopCraving" placeholder="What do you crave?">
+          <label>渴望（动机）</label>
+          <input type="text" id="loopCraving" placeholder="你渴望什么？">
         </div>
         <div class="form-group">
-          <label>Response (Action)</label>
-          <input type="text" id="loopResponse" placeholder="What do you actually do?">
+          <label>反应（行动）</label>
+          <input type="text" id="loopResponse" placeholder="你实际上做什么？">
         </div>
         <div class="form-group">
-          <label>Reward (Benefit)</label>
-          <input type="text" id="loopReward" placeholder="What benefit do you get?">
+          <label>奖励（益处）</label>
+          <input type="text" id="loopReward" placeholder="你得到什么益处？">
         </div>
         <div class="form-actions">
-          <button type="button" class="btn btn-secondary modal-close">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Loop</button>
+          <button type="button" class="btn btn-secondary modal-close">取消</button>
+          <button type="submit" class="btn btn-primary">保存循环</button>
         </div>
       </form>
     </div>

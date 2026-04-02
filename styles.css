@@ -1,5 +1,5 @@
 /* =====================
-   CSS VARIABLES & THEME
+   CSS 变量与主题
    ===================== */
 :root {
   --bg: #faf7f2;
@@ -41,7 +41,7 @@
 }
 
 /* =====================
-   RESET & BASE
+   重置与基础
    ===================== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -71,7 +71,7 @@ a { color: var(--accent); text-decoration: none; }
 button { cursor: pointer; font-family: var(--font); border: none; background: none; }
 
 /* =====================
-   HEADER
+   页头
    ===================== */
 .header {
   position: sticky;
@@ -97,7 +97,7 @@ button { cursor: pointer; font-family: var(--font); border: none; background: no
 .header-actions { display: flex; align-items: center; gap: 10px; }
 
 /* =====================
-   BUTTONS
+   按钮
    ===================== */
 .btn {
   display: inline-flex; align-items: center; gap: 6px;
@@ -123,7 +123,7 @@ button { cursor: pointer; font-family: var(--font); border: none; background: no
 .btn-icon:hover { background: var(--border); transform: scale(1.1); }
 
 /* =====================
-   HERO / COMPOUND EFFECT
+   首屏 / 复利效应
    ===================== */
 .hero {
   background: linear-gradient(135deg, var(--accent-light) 0%, var(--bg) 100%);
@@ -185,7 +185,7 @@ button { cursor: pointer; font-family: var(--font); border: none; background: no
 }
 
 /* =====================
-   SECTIONS
+   各区块
    ===================== */
 .section { padding: 36px 0; border-bottom: 1px solid var(--border); }
 .section:last-child { border-bottom: none; }
@@ -199,7 +199,7 @@ button { cursor: pointer; font-family: var(--font); border: none; background: no
 }
 
 /* =====================
-   DAILY SCORECARD
+   每日得分卡
    ===================== */
 .score-display {
   font-size: 1rem; font-weight: 600; color: var(--text-secondary);
@@ -239,7 +239,7 @@ button { cursor: pointer; font-family: var(--font); border: none; background: no
 .scorecard-name { font-size: 0.88rem; font-weight: 500; flex: 1; }
 
 /* =====================
-   ENVIRONMENT TIP
+   环境提示
    ===================== */
 .section-tip { background: var(--accent-light); border-radius: var(--radius); margin: 20px auto; max-width: 960px; }
 .tip-card {
@@ -253,7 +253,7 @@ button { cursor: pointer; font-family: var(--font); border: none; background: no
 .tip-content p { font-size: 0.85rem; margin-bottom: 6px; }
 
 /* =====================
-   IDENTITY
+   身份认同
    ===================== */
 .identity-grid {
   display: grid;
@@ -278,7 +278,7 @@ button { cursor: pointer; font-family: var(--font); border: none; background: no
 .identity-actions { margin-top: 10px; display: flex; gap: 8px; }
 
 /* =====================
-   HABIT STACKING
+   习惯堆叠
    ===================== */
 .stacks-grid {
   display: grid;
@@ -306,7 +306,7 @@ button { cursor: pointer; font-family: var(--font); border: none; background: no
 .stack-cue { font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; }
 
 /* =====================
-   HABIT LOOP DIAGRAM
+   习惯循环图
    ===================== */
 .section-loop { background: var(--bg); }
 
@@ -333,7 +333,7 @@ button { cursor: pointer; font-family: var(--font); border: none; background: no
 }
 
 /* =====================
-   HABITS LIST
+   习惯列表
    ===================== */
 .habits-list { display: flex; flex-direction: column; gap: 16px; }
 
@@ -399,7 +399,7 @@ button { cursor: pointer; font-family: var(--font); border: none; background: no
 }
 
 /* =====================
-   TINY HABITS
+   微习惯
    ===================== */
 .section-tiny { }
 .tiny-card {
@@ -415,7 +415,7 @@ button { cursor: pointer; font-family: var(--font); border: none; background: no
 .tiny-content li { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px; line-height: 1.5; }
 
 /* =====================
-   MODAL
+   弹窗
    ===================== */
 .modal {
   display: none; position: fixed; inset: 0; z-index: 200;
@@ -449,7 +449,7 @@ button { cursor: pointer; font-family: var(--font); border: none; background: no
 .modal-close { font-size: 1.5rem; line-height: 1; color: var(--text-muted); }
 
 /* =====================
-   FORMS
+   表单
    ===================== */
 .form-group { margin-bottom: 14px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -487,12 +487,12 @@ textarea { resize: vertical; min-height: 70px; }
 .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
 
 /* =====================
-   SCORE STARS
+   得分星星
    ===================== */
 .score-stars { margin-left: 8px; font-size: 0.9rem; }
 
 /* =====================
-   DELETE BUTTON
+   删除按钮
    ===================== */
 .btn-delete {
   background: none; border: none; color: var(--text-muted);
@@ -502,7 +502,7 @@ textarea { resize: vertical; min-height: 70px; }
 .btn-delete:hover { background: var(--negative-light); color: var(--negative); }
 
 /* =====================
-   EMPTY STATE
+   空状态
    ===================== */
 .empty-state {
   text-align: center; padding: 40px 20px;
@@ -511,7 +511,7 @@ textarea { resize: vertical; min-height: 70px; }
 .empty-state-icon { font-size: 2.5rem; margin-bottom: 10px; }
 
 /* =====================
-   RESPONSIVE
+   响应式
    ===================== */
 @media (max-width: 640px) {
   .compound-effect {

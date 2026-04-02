@@ -1,53 +1,53 @@
-# Atomic Habits Tracker
+# 原子习惯追踪器
 
-A production-ready single-page habit tracker inspired by James Clear's *Atomic Habits*.
+一款基于詹姆斯·克利尔的《原子习惯》打造的生产级单页习惯追踪应用。
 
-**Live Demo:** https://longaotian88.github.io/atomic-habits-tracker/
+**在线演示：** https://longaotian88.github.io/atomic-habits-tracker/
 
-## Features
+## 功能特点
 
-- ✅ **Habit Tracker** — Add/delete habits, daily check-off with visual streak calendar ("don't break the chain")
-- ✅ **Habit Loop Display** — Per-habit Cue → Craving → Response → Reward loop editor
-- ✅ **Identity Tracking** — Set identity-based habits (e.g. "I am a runner")
-- ✅ **Habit Stacking** — "After [existing habit], I will [new habit]" cards
-- ✅ **1% Better Visual** — Compound effect comparison: 1% better vs 1% worse each day
-- ✅ **Daily Scorecard** — Star-based daily score across all habits
-- ✅ **Environment Design Tips** — Make good habits obvious, bad habits invisible
-- ✅ **Tiny Habits Guide** — BJ Fogg's method integration
-- ✅ **Dark Mode** — Toggle between light and dark themes
-- ✅ **Mobile Responsive** — Works on all screen sizes
-- ✅ **LocalStorage** — All data stored locally, no backend needed
+- ✅ **习惯追踪** — 添加/删除习惯，每日打卡配合可视化连续日历（"别打断链"）
+- ✅ **习惯循环展示** — 每个习惯的「提示 → 渴望 → 反应 → 奖励」循环编辑器
+- ✅ **身份认同追踪** — 设定基于身份的习惯（例如"我是一名跑者"）
+- ✅ **习惯堆叠** — "在 [现有习惯] 之后，我将 [新习惯]" 卡片
+- ✅ **1% 复利效应可视化** — 每天好1% vs 每天差1%的对比展示
+- ✅ **每日得分卡** — 全习惯星标评分
+- ✅ **环境设计提示** — 让好习惯显而易见，让坏习惯看不见
+- ✅ **微习惯指南** — BJ·福格方法集成
+- ✅ **深色模式** — 浅色/深色主题切换
+- ✅ **移动端适配** — 适配所有屏幕尺寸
+- ✅ **本地存储** — 所有数据存储在浏览器本地，无需后端
 
-## Tech Stack
+## 技术栈
 
-Pure HTML + CSS + JavaScript. No frameworks, no build step, no server.
+纯 HTML + CSS + JavaScript。无框架，无构建步骤，无服务器。
 
-## Deployment
+## 部署
 
-The site deploys automatically via GitHub Actions on every push to `master`.
+每次推送到 `master` 分支后，GitHub Actions 会自动部署。
 
 ```
 https://longaotian88.github.io/atomic-habits-tracker/
 ```
 
-## ⚠️ Note on Privacy
+## ⚠️ 隐私说明
 
-GitHub Pages requires a **paid GitHub plan** to host private repositories. 
-The repository is currently public to enable GitHub Pages. All habit data is stored 
-in your **browser's localStorage** — no data ever leaves your device.
+GitHub Pages 需要**付费 GitHub 计划**才能托管私有仓库。
+该仓库目前为公开状态，以启用 GitHub Pages。所有习惯数据存储在
+你**浏览器的 localStorage** 中——数据永远不会离开你的设备。
 
-To host privately, consider: Netlify Drop, Vercel, or GitHub Pages with a paid plan.
+如需私有托管，可考虑：Netlify Drop、Vercel 或购买 GitHub 付费计划。
 
-## Local Development
+## 本地开发
 
-Simply open `index.html` in a browser, or use a local server:
+直接在浏览器中打开 `index.html`，或使用本地服务器：
 
 ```bash
 npx serve .
-# or
+# 或者
 python3 -m http.server 8000
 ```
 
-## License
+## 开源协议
 
 MIT
