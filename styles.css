@@ -844,6 +844,96 @@ textarea { resize: vertical; min-height: 70px; }
 
 .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
 
+/* Label subtitle */
+.label-sub {
+  font-size: 0.65rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  text-transform: none;
+  letter-spacing: 0;
+  margin-left: 4px;
+}
+
+/* Advanced section */
+.advanced-section {
+  display: none;
+  animation: slideDown 0.2s ease;
+}
+.advanced-section.open {
+  display: block;
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Advanced toggle button */
+.advanced-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  background: none;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-xs);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  min-height: 44px;
+}
+.advanced-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-light);
+}
+.advanced-toggle__arrow {
+  font-size: 0.6rem;
+  transition: transform 0.2s ease;
+}
+
+/* Habit preview card */
+.habit-preview {
+  display: none;
+  align-items: flex-start;
+  gap: 10px;
+  background: linear-gradient(135deg, var(--accent-light), #fff9f0);
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  animation: fadeIn 0.3s ease;
+}
+[data-theme="dark"] .habit-preview {
+  background: linear-gradient(135deg, #2a1a08, #1e1e30);
+  border-color: var(--accent);
+}
+.habit-preview.visible {
+  display: flex;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+.habit-preview__icon {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+.habit-preview__text {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #92400e;
+  line-height: 1.5;
+}
+[data-theme="dark"] .habit-preview__text {
+  color: #fcd34d;
+}
+
 /* =====================
    得分星星
    ===================== */
@@ -962,6 +1052,37 @@ textarea { resize: vertical; min-height: 70px; }
   .loop-sep { display: none; }
 
   .form-row { grid-template-columns: 1fr; }
+
+  /* Mobile-friendly form: ensure 44px min tap targets */
+  .form-group { margin-bottom: 12px; }
+  input[type="text"], select, textarea {
+    padding: 11px 12px;
+    font-size: 16px; /* prevents iOS zoom on focus */
+    min-height: 44px;
+  }
+  select { min-height: 44px; }
+  textarea { min-height: 60px; }
+
+  /* Modal box on mobile */
+  .modal-box {
+    padding: 20px 16px;
+    width: 95%;
+    max-height: 92vh;
+  }
+
+  /* Basic form compact: 4 fields + preview + toggle fit on one screen */
+  .habit-preview {
+    margin-bottom: 10px;
+    padding: 10px 12px;
+  }
+  .habit-preview__text {
+    font-size: 0.82rem;
+  }
+  .advanced-toggle {
+    margin-bottom: 10px;
+    min-height: 44px;
+    font-size: 0.78rem;
+  }
 
   .tip-card { flex-direction: column; }
   .tiny-card { flex-direction: column; }

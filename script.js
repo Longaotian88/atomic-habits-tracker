@@ -732,6 +732,16 @@ function openModal(id) {
   document.getElementById(id)?.classList.add('open');
   if (id === 'habitModal') {
     rotateHabitTip();
+    // Reset advanced section to collapsed state
+    const advSection = document.getElementById('advancedSection');
+    const advToggle = document.getElementById('advancedToggle');
+    const advToggleText = document.getElementById('advancedToggleText');
+    const advToggleArrow = document.getElementById('advancedToggleArrow');
+    if (advSection) advSection.classList.remove('open');
+    if (advToggle) advToggle.classList.remove('open');
+    if (advToggleText) advToggleText.textContent = '展开高级设置';
+    if (advToggleArrow) advToggleArrow.textContent = '▼';
+    updateHabitPreview();
   }
 }
 function closeModal(id) {
@@ -899,6 +909,44 @@ function setupEventListeners() {
     });
   });
 
+  // 高级设置展开/收起
+  const advToggle = document.getElementById('advancedToggle');
+  advToggle?.addEventListener('click', () => {
+    const advSection = document.getElementById('advancedSection');
+    const advToggleText = document.getElementById('advancedToggleText');
+    const advToggleArrow = document.getElementById('advancedToggleArrow');
+    const isOpen = advSection?.classList.contains('open');
+    if (advSection) advSection.classList.toggle('open');
+    advToggle?.classList.toggle('open');
+    if (advToggleText) advToggleText.textContent = isOpen ? '展开高级设置' : '收起高级设置';
+    if (advToggleArrow) advToggleArrow.textContent = isOpen ? '▼' : '▲';
+  });
+
+  // 习惯预览 — 实时更新
+  function updateHabitPreview() {
+    const name = document.getElementById('habitName')?.value.trim() || '';
+    const cue = document.getElementById('habitCue')?.value.trim() || '';
+    const tinyAction = document.getElementById('habitTinyAction')?.value.trim() || '';
+    const preview = document.getElementById('habitPreview');
+    const previewText = document.getElementById('habitPreviewText');
+    if (!preview || !previewText) return;
+    if (name && cue && tinyAction) {
+      previewText.textContent = `在我${cue}后，我会${tinyAction}。`;
+      preview.classList.add('visible');
+    } else if (name && cue) {
+      previewText.textContent = `在我${cue}后，我会……`;
+      preview.classList.add('visible');
+    } else if (name && tinyAction) {
+      previewText.textContent = `${name} → ${tinyAction}`;
+      preview.classList.add('visible');
+    } else {
+      preview.classList.remove('visible');
+    }
+  }
+  ['habitName', 'habitCue', 'habitTinyAction'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', updateHabitPreview);
+  });
+
   // 得分卡点击（事件委托）
   document.getElementById('scorecardGrid')?.addEventListener('click', (e) => {
     const check = e.target.closest('.scorecard-check');
@@ -918,9 +966,9 @@ function setupEventListeners() {
       target: parseInt(document.getElementById('habitTarget').value),
       color: activeColor?.dataset.color || '#f97316',
       cue: document.getElementById('habitCue').value.trim(),
-      craving: document.getElementById('habitCraving').value.trim(),
-      response: document.getElementById('habitResponse').value.trim(),
-      reward: document.getElementById('habitReward').value.trim(),
+      craving: document.getElementById('habitMotivation')?.value.trim() || '',
+      response: document.getElementById('habitTinyAction')?.value.trim() || '',
+      reward: document.getElementById('habitInstantReward')?.value.trim() || '',
       createdAt: new Date().toISOString(),
       archived: false
     };
@@ -929,6 +977,15 @@ function setupEventListeners() {
     e.target.reset();
     document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
     document.querySelector('.color-dot[data-color="#f97316"]')?.classList.add('active');
+    // Reset advanced section to collapsed
+    const advSection = document.getElementById('advancedSection');
+    const advToggle = document.getElementById('advancedToggle');
+    const advToggleText = document.getElementById('advancedToggleText');
+    const advToggleArrow = document.getElementById('advancedToggleArrow');
+    if (advSection) advSection.classList.remove('open');
+    if (advToggle) advToggle.classList.remove('open');
+    if (advToggleText) advToggleText.textContent = '展开高级设置';
+    if (advToggleArrow) advToggleArrow.textContent = '▼';
     closeModal('habitModal');
     renderAll();
   });

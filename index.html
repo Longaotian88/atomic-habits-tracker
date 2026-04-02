@@ -241,55 +241,71 @@
         <span class="habit-tip-text" id="habitTipText">提示：把习惯和特定时间和地点绑定，成功率提升2倍！</span>
       </div>
       <form id="habitForm">
-        <div class="form-group">
-          <label>习惯名称</label>
-          <input type="text" id="habitName" placeholder="例如：晨跑" required>
-        </div>
-        <div class="form-group">
-          <label>描述（可选）</label>
-          <input type="text" id="habitDesc" placeholder="简短描述">
-        </div>
-        <div class="form-group">
-          <label>目标（每周次数）</label>
-          <select id="habitTarget">
-            <option value="7">每天（每周7次）</option>
-            <option value="5">每周5次</option>
-            <option value="3">每周3次</option>
-            <option value="1">每周1次</option>
-          </select>
+        <!-- Basic fields: always visible -->
+        <div class="form-group form-group--name">
+          <label for="habitName">习惯名称</label>
+          <input type="text" id="habitName" placeholder="例如：晨跑、读书、冥想" required>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>提示（触发）</label>
-            <input type="text" id="habitCue" placeholder="例如：在我倒完早咖啡之后">
-          </div>
-          <div class="form-group">
-            <label>渴望（动机）</label>
-            <input type="text" id="habitCraving" placeholder="例如：我想感到精力充沛">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>反应（行动）</label>
-            <input type="text" id="habitResponse" placeholder="例如：我将跑步20分钟">
-          </div>
-          <div class="form-group">
-            <label>奖励（益处）</label>
-            <input type="text" id="habitReward" placeholder="例如：我感到很有成就感">
+            <label for="habitTarget">目标频率</label>
+            <select id="habitTarget">
+              <option value="7">每天</option>
+              <option value="5">每周5次</option>
+              <option value="3">每周3次</option>
+              <option value="1">每周1次</option>
+            </select>
           </div>
         </div>
         <div class="form-group">
-          <label>颜色</label>
-          <div class="color-picker" id="colorPicker">
-            <span class="color-dot active" data-color="#f97316" style="background:#f97316"></span>
-            <span class="color-dot" data-color="#3b82f6" style="background:#3b82f6"></span>
-            <span class="color-dot" data-color="#10b981" style="background:#10b981"></span>
-            <span class="color-dot" data-color="#8b5cf6" style="background:#8b5cf6"></span>
-            <span class="color-dot" data-color="#ec4899" style="background:#ec4899"></span>
-            <span class="color-dot" data-color="#06b6d4" style="background:#06b6d4"></span>
-            <span class="color-dot" data-color="#eab308" style="background:#eab308"></span>
+          <label for="habitCue">提示（什么时候开始）</label>
+          <input type="text" id="habitCue" placeholder="例如：洗漱完后 / 坐到书桌前 / 晚饭后">
+        </div>
+        <div class="form-group">
+          <label for="habitTinyAction">最小行动 <span class="label-sub">做到什么程度就算完成</span></label>
+          <input type="text" id="habitTinyAction" placeholder="例如：阅读2页 / 写1句话 / 走路5分钟">
+        </div>
+
+        <!-- Habit preview sentence -->
+        <div class="habit-preview" id="habitPreview">
+          <div class="habit-preview__icon">⚛️</div>
+          <div class="habit-preview__text" id="habitPreviewText"></div>
+        </div>
+
+        <!-- Advanced toggle -->
+        <button type="button" class="advanced-toggle" id="advancedToggle">
+          <span id="advancedToggleText">展开高级设置</span>
+          <span class="advanced-toggle__arrow" id="advancedToggleArrow">▼</span>
+        </button>
+
+        <!-- Advanced fields: hidden by default -->
+        <div class="advanced-section" id="advancedSection">
+          <div class="form-group">
+            <label for="habitMotivation">我为什么想做这件事</label>
+            <input type="text" id="habitMotivation" placeholder="例如：我想更平静 / 想每天有进步感 / 想减少拖延">
+          </div>
+          <div class="form-group">
+            <label for="habitInstantReward">完成后的即时奖励 <span class="label-sub">当下就能感受到的好处</span></label>
+            <input type="text" id="habitInstantReward" placeholder="例如：打个勾很有成就感 / 感觉今天没白过 / 放松一下">
+          </div>
+          <div class="form-group">
+            <label for="habitDesc">描述 / 备注</label>
+            <textarea id="habitDesc" placeholder="补充说明（可选）" rows="2"></textarea>
+          </div>
+          <div class="form-group">
+            <label>颜色</label>
+            <div class="color-picker" id="colorPicker">
+              <span class="color-dot active" data-color="#f97316" style="background:#f97316"></span>
+              <span class="color-dot" data-color="#3b82f6" style="background:#3b82f6"></span>
+              <span class="color-dot" data-color="#10b981" style="background:#10b981"></span>
+              <span class="color-dot" data-color="#8b5cf6" style="background:#8b5cf6"></span>
+              <span class="color-dot" data-color="#ec4899" style="background:#ec4899"></span>
+              <span class="color-dot" data-color="#06b6d4" style="background:#06b6d4"></span>
+              <span class="color-dot" data-color="#eab308" style="background:#eab308"></span>
+            </div>
           </div>
         </div>
+
         <div class="form-actions">
           <button type="button" class="btn btn-secondary modal-close">取消</button>
           <button type="submit" class="btn btn-primary">添加习惯</button>
