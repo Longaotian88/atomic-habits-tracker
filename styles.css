@@ -1359,3 +1359,91 @@ textarea { resize: vertical; min-height: 70px; }
 @media (max-width: 380px) {
   .scorecard-grid { grid-template-columns: 1fr; }
 }
+
+
+/* ─── 反思 v2 ─────────────────────────── */
+.reflect-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 5px;
+}
+.reflect-rating {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.rating-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--bg-card);
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rating-dot:hover {
+  border-color: var(--accent);
+  transform: scale(1.15);
+}
+.rating-dot.selected {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  transform: scale(1.1);
+}
+.rating-energy {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+.rating-energy.selected {
+  background: var(--accent);
+  color: #fff;
+}
+.obstacle-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.chip-sm {
+  padding: 3px 10px;
+  font-size: 0.7rem;
+}
+.reflection-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: var(--bg);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-family: var(--font);
+  resize: vertical;
+  transition: var(--transition);
+}
+.reflection-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ─── 空状态提示 ───────────────────── */
+.empty-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  text-align: center;
+}
+
+/* Mobile reflection */
+@media (max-width: 640px) {
+  .reflect-rating { gap: 4px; }
+  .rating-dot { width: 32px; height: 32px; font-size: 1rem; }
+  .obstacle-chips { gap: 4px; }
+  .chip-sm { padding: 3px 8px; font-size: 0.68rem; }
+}

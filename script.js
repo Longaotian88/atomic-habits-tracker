@@ -184,78 +184,56 @@ function getArchivedHabits() {
   return state.habits.filter(h => h.archived);
 }
 
-// ─── 每日反思 ─────────────────────────────────────────────────────────────
+// ─── 每日反思 v2 ──────────────────────────────────────────────────────────
 function loadReflection() {
   const key = REFLECTION_KEY + '_' + today();
   const saved = localStorage.getItem(key);
   const savedEl = document.getElementById('reflectionSaved');
-  const followupEl = document.getElementById('reflectionFollowup');
-  const followupQ = document.getElementById('followupQuestion');
-  const reflectText = document.getElementById('reflectionText');
-  const reflectBtns = document.getElementById('reflectionButtons');
-
   if (saved) {
     try {
       const data = JSON.parse(saved);
-      if (reflectBtns) {
-        reflectBtns.querySelectorAll('.reflect-btn').forEach(btn => {
-          if ((data.mood === 'good' && btn.classList.contains('reflect-good')) ||
-              (data.mood === 'hard' && btn.classList.contains('reflect-hard'))) {
-            btn.classList.add('selected');
-          }
+      if (data.mood) {
+        const d = document.querySelector('#moodRating .rating-dot[data-val="' + data.mood + '"]');
+        if (d) d.classList.add('selected');
+      }
+      if (data.energy) {
+        const d = document.querySelector('#energyRating .rating-dot[data-val="' + data.energy + '"]');
+        if (d) d.classList.add('selected');
+      }
+      if (data.obstacles && Array.isArray(data.obstacles)) {
+        data.obstacles.forEach(obs => {
+          const c = document.querySelector('#obstacleChips .chip-sm[data-val="' + obs + '"]');
+          if (c) c.classList.add('selected');
         });
       }
-      if (followupQ) followupQ.textContent = data.question || '';
-      if (reflectText && data.text) {
-        reflectText.value = data.text;
-        if (followupEl) followupEl.style.display = 'block';
-      }
+      const t = document.getElementById('reflectionText');
+      if (t && data.text) t.value = data.text;
       if (savedEl) savedEl.textContent = '✓ 已保存';
     } catch(e) {}
   }
 }
 
 function saveReflection() {
-  const mood = document.querySelector('.reflect-btn.selected')?.dataset.mood || '';
-  const question = document.getElementById('followupQuestion')?.textContent || '';
+  const mood = document.querySelector('#moodRating .rating-dot.selected')?.dataset.val || 0;
+  const energy = document.querySelector('#energyRating .rating-dot.selected')?.dataset.val || 0;
+  const obstacles = Array.from(document.querySelectorAll('#obstacleChips .chip-sm.selected')).map(c => c.dataset.val);
   const text = document.getElementById('reflectionText')?.value.trim() || '';
   const savedEl = document.getElementById('reflectionSaved');
-
-  const data = { mood, question, text, savedAt: new Date().toISOString() };
+  const data = { mood, energy, obstacles, text, savedAt: new Date().toISOString() };
   localStorage.setItem(REFLECTION_KEY + '_' + today(), JSON.stringify(data));
-
-  if (savedEl) {
-    savedEl.textContent = '✓ 已保存';
-    setTimeout(() => { if (savedEl) savedEl.textContent = ''; }, 2000);
-  }
+  if (savedEl) { savedEl.textContent = '✓ 已保存'; setTimeout(() => { if (savedEl) savedEl.textContent = ''; }, 2000); }
 }
 
-function handleReflectionClick(mood) {
-  const questions = REFLECTION_QUESTIONS[mood] || [];
-  const question = questions[Math.floor(Math.random() * questions.length)];
-
-  // Mark button as selected
-  document.querySelectorAll('.reflect-btn').forEach(btn => btn.classList.remove('selected'));
-  const selectedBtn = document.querySelector(`.reflect-btn.reflect-${mood}`);
-  if (selectedBtn) selectedBtn.classList.add('selected');
-
-  // Show followup
-  const followupEl = document.getElementById('reflectionFollowup');
-  const followupQ = document.getElementById('followupQuestion');
-  if (followupQ) followupQ.textContent = question;
-  if (followupEl) {
-    followupEl.style.display = 'block';
-    const textArea = document.getElementById('reflectionText');
-    if (textArea) {
-      textArea.value = '';
-      textArea.focus();
-    }
+document.addEventListener('click', function(e) {
+  const dot = e.target.closest('.rating-dot');
+  if (dot && dot.closest('.reflect-rating')) {
+    dot.closest('.reflect-rating').querySelectorAll('.rating-dot').forEach(d => d.classList.remove('selected'));
+    dot.classList.add('selected');
+    saveReflection();
   }
-
-  // Save immediately (mood + question)
-  const data = { mood, question, text: '', savedAt: new Date().toISOString() };
-  localStorage.setItem(REFLECTION_KEY + '_' + today(), JSON.stringify(data));
-}
+  const chip = e.target.closest('.obstacle-chips .chip-sm');
+  if (chip) { chip.classList.toggle('selected'); saveReflection(); }
+});
 
 // ─── 进度仪表盘 ───────────────────────────────────────────────────────────
 function getWeekDays() {
@@ -1080,7 +1058,8 @@ function setupEventListeners() {
 
   // 按钮事件
   var addBtn = document.getElementById('addHabitBtn');
-  if (addBtn) addBtn.addEventListener('click', function() { openModal('habitModal'); });
+  if (addBtn) addBtn.addEventListener('click', function() { openModal('habitModal');
+      populateHabitModalDropdowns(); });
   var addIdBtn = document.getElementById('addIdentityBtn');
   if (addIdBtn) addIdBtn.addEventListener('click', function() { openModal('identityModal'); });
   var addStkBtn = document.getElementById('addStackBtn');
@@ -1225,8 +1204,8 @@ function setupEventListeners() {
         archived: false,
         customFreq: customFreq,
         tinyAction: ((document.getElementById('habitTinyAction') || {}).value || '').trim(),
-        linkedIdentityId: '',
-        linkedStackId: ''
+        linkedIdentityId: (document.getElementById('habitIdentitySelect') || {}).value || '',
+        linkedStackId: (document.getElementById('habitStackSelect') || {}).value || ''
       };
       state.habits.push(habit);
       saveState();

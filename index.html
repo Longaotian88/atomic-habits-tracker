@@ -17,23 +17,23 @@
   <div id="toast" class="toast" aria-live="polite"></div>
 
   <!-- Header -->
-  <header class="header">
-    <div class="container header-inner">
-      <div class="logo">
-        <span class="logo-icon">⚛️</span>
-        <span class="logo-text">原子习惯</span>
-      </div>
-      <div class="header-actions">
-        <button class="btn btn-secondary btn-sm" id="exportDataBtn" title="导出数据备份">📤 导出</button>
-        <button class="btn btn-secondary btn-sm" id="importDataBtn" title="导入数据恢复">📥 导入</button>
-        <input type="file" id="importFileInput" accept=".json" style="display:none">
-        <button class="btn-icon" id="darkModeToggle" title="切换深色模式">🌙</button>
-        <button class="btn btn-primary" id="addHabitBtn">+ 添加习惯</button>
-      </div>
-    </div>
-  </header>
 
-  <!-- Hero / 1% Better -->
+  <!-- SCORECARD -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2>📋 今日得分 — <span id="todayDate"></span></h2>
+        <div class="score-display">
+          <span id="dailyScore">0</span> / <span id="totalHabits">0</span><div class="empty-hint">还没添加习惯，先添加一个最微小的开始</div>
+          <span class="score-stars" id="scoreStars"></span>
+        </div>
+      </div>
+      <div class="scorecard-grid" id="scorecardGrid"></div>
+    </div>
+  </section>
+
+
+  <!-- HERO -->
   <section class="hero">
     <div class="container">
       <p class="hero-quote-main">"习惯是自我改善的复利。每天进步1%，一年后将提升37倍。"</p>
@@ -66,7 +66,8 @@
     </div>
   </section>
 
-  <!-- Progress Dashboard -->
+
+  <!-- DASHBOARD -->
   <section class="section section-dashboard">
     <div class="container">
       <div class="section-header">
@@ -96,20 +97,36 @@
         <div class="dashboard-card dash-reflect">
           <div class="dash-card-title">💭 每日反思</div>
           <div id="reflectionArea">
-            <p class="reflect-prompt">今天感觉怎么样？</p>
-            <div class="reflection-buttons" id="reflectionButtons">
-              <button class="reflect-btn reflect-good" id="reflectGoodBtn">
-                今天很顺 😊
-              </button>
-              <button class="reflect-btn reflect-hard" id="reflectHardBtn">
-                今天有点难 😅
-              </button>
+            <!-- Mood: 1-5 emoji scale -->
+            <p class="reflect-label">心情</p>
+            <div class="reflect-rating" id="moodRating">
+              <button class="rating-dot" data-val="1" title="很糟">😫</button>
+              <button class="rating-dot" data-val="2" title="不太好">😕</button>
+              <button class="rating-dot" data-val="3" title="一般">😐</button>
+              <button class="rating-dot" data-val="4" title="不错">🙂</button>
+              <button class="rating-dot" data-val="5" title="很棒">😊</button>
             </div>
-            <div class="reflection-followup" id="reflectionFollowup" style="display:none">
-              <p class="followup-question" id="followupQuestion"></p>
-              <textarea id="reflectionText" class="reflection-input" placeholder="写下你的想法..."></textarea>
-              <button class="btn btn-secondary btn-sm" id="saveReflectionBtn" style="margin-top:8px">保存反思</button>
+            <!-- Energy: 1-5 scale -->
+            <p class="reflect-label" style="margin-top:10px">精力</p>
+            <div class="reflect-rating" id="energyRating">
+              <button class="rating-dot rating-energy" data-val="1" title="很低">1</button>
+              <button class="rating-dot rating-energy" data-val="2" data-val="2">2</button>
+              <button class="rating-dot rating-energy" data-val="3">3</button>
+              <button class="rating-dot rating-energy" data-val="4">4</button>
+              <button class="rating-dot rating-energy" data-val="5">5</button>
             </div>
+            <!-- Obstacle chips -->
+            <p class="reflect-label" style="margin-top:10px">今天卡在哪里？（可选）</p>
+            <div class="obstacle-chips" id="obstacleChips">
+              <button type="button" class="chip chip-sm" data-val="太忙">太忙</button>
+              <button type="button" class="chip chip-sm" data-val="忘了">忘了</button>
+              <button type="button" class="chip chip-sm" data-val="没动力">没动力</button>
+              <button type="button" class="chip chip-sm" data-val="环境不对">环境不对</button>
+              <button type="button" class="chip chip-sm" data-val="目标太大">目标太大</button>
+            </div>
+            <!-- Optional text -->
+            <textarea id="reflectionText" class="reflection-input" placeholder="补充一句今天的情况（可选）..." rows="2" style="margin-top:10px"></textarea>
+            <button class="btn btn-secondary btn-sm" id="saveReflectionBtn" style="margin-top:8px">保存反思</button>
             <div class="reflection-saved" id="reflectionSaved"></div>
           </div>
         </div>
@@ -117,21 +134,8 @@
     </div>
   </section>
 
-  <!-- Daily Scorecard -->
-  <section class="section">
-    <div class="container">
-      <div class="section-header">
-        <h2>📋 今日得分 — <span id="todayDate"></span></h2>
-        <div class="score-display">
-          <span id="dailyScore">0</span> / <span id="totalHabits">0</span>
-          <span class="score-stars" id="scoreStars"></span>
-        </div>
-      </div>
-      <div class="scorecard-grid" id="scorecardGrid"></div>
-    </div>
-  </section>
 
-  <!-- 方法工具箱 (collapsible) -->
+  <!-- TOOLBOX -->
   <section class="section section-toolbox">
     <div class="container">
       <button class="toolbox-toggle" id="toolboxToggle">
@@ -204,7 +208,8 @@
     </div>
   </section>
 
-  <!-- All Habits with Streak Calendar -->
+
+  <!-- HABITS -->
   <section class="section">
     <div class="container">
       <div class="section-header">
@@ -214,7 +219,8 @@
     </div>
   </section>
 
-  <!-- Identity Habits (moved below 我的习惯) -->
+
+  <!-- IDENTITY -->
   <section class="section">
     <div class="container">
       <div class="section-header">
@@ -225,7 +231,8 @@
     </div>
   </section>
 
-  <!-- Habit Stacking (moved below 我的习惯) -->
+
+  <!-- STACKING -->
   <section class="section">
     <div class="container">
       <div class="section-header">
@@ -237,7 +244,8 @@
     </div>
   </section>
 
-  <!-- Archived Habits -->
+
+  <!-- ARCHIVED -->
   <section class="section section-archived" id="archivedSection" style="display:none">
     <div class="container">
       <div class="section-header">
@@ -247,6 +255,8 @@
       <div class="habits-list" id="archivedList"></div>
     </div>
   </section>
+
+
 
   <!-- Modals -->
   <!-- Add Habit Modal -->
@@ -320,6 +330,18 @@
 
         <!-- Advanced fields: hidden by default -->
         <div class="advanced-section" id="advancedSection">
+          <div class="form-group">
+            <label for="habitIdentitySelect">这条习惯服务于哪个身份？</label>
+            <select id="habitIdentitySelect">
+              <option value="">— 不关联身份 —</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="habitStackSelect">这条习惯挂靠在哪个旧习惯后面？</label>
+            <select id="habitStackSelect">
+              <option value="">— 不关联堆叠 —</option>
+            </select>
+          </div>
           <div class="form-group">
             <label for="habitMotivation">我为什么想做这件事</label>
             <input type="text" id="habitMotivation" placeholder="例如：我想更平静 / 想每天有进步感 / 想减少拖延">
