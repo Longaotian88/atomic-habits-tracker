@@ -577,7 +577,7 @@ function renderStacks() {
 
 // ─── 渲染：习惯 ─────────────────────────────────────────────────────────
 function renderHabits() {
-  const list = document.getElementById('habitsList');
+  const list = document.getElementById('habitsContainer');
   if (!list) return;
 
   const activeHabits = getActiveHabits();
@@ -586,9 +586,10 @@ function renderHabits() {
     list.innerHTML = `
       <div class="empty-state">
         <span class="empty-state-icon">🎯</span>
-        <h3>还没有习惯</h3>
-        <p class="empty-state-sub">点击"+ 添加习惯"开始吧！</p>
-        <div class="example-habits">
+        <h3>今天还没有可执行习惯</h3>
+        <p class="empty-state-sub">先添加 1 个 30 秒内能完成的小习惯</p>
+        <button class="btn btn-primary btn-sm" onclick="openModal('habitModal')">添加第一个习惯</button>
+        <div class="example-habits" style="margin-top:16px">
           ${QUICK_EXAMPLE_HABITS.map(ex => `
             <button class="example-habit-btn" onclick="addQuickHabit('${ex.name}','${ex.cue}','${ex.tinyAction}','${ex.color}')">
               ${ex.name}
@@ -655,33 +656,17 @@ function renderHabits() {
 
         ${metaTags.length > 0 ? `<div class="habit-card-meta">${metaTags.join('')}</div>` : ''}
 
-        ${habit.cue || habit.craving || habit.response || habit.reward ? `
-        <div class="habit-loop">
-          <div class="loop-part">
-            <div class="loop-part-label">提示</div>
-            <div class="loop-part-val">${habit.cue || '—'}</div>
-          </div>
-          <div class="loop-sep">→</div>
-          <div class="loop-part">
-            <div class="loop-part-label">渴望</div>
-            <div class="loop-part-val">${habit.craving || '—'}</div>
-          </div>
-          <div class="loop-sep">→</div>
-          <div class="loop-part">
-            <div class="loop-part-label">反应</div>
-            <div class="loop-part-val">${habit.response || '—'}</div>
-          </div>
-          <div class="loop-sep">→</div>
-          <div class="loop-part">
-            <div class="loop-part-label">奖励</div>
-            <div class="loop-part-val">${habit.reward || '—'}</div>
-          </div>
-        </div>` : ''}
-
-        <!-- Optimize habit link (always visible, expands inline loop fields) -->
-        <button class="optimize-link" id="optimizeLink_${habit.id}" onclick="toggleOptimizeLink('${habit.id}')">
-          ✨ 优化这个习惯 <span class="optimize-link__arrow">▶</span>
-        </button>
+        <!-- Inline action: complete button + expand for details -->
+        <div class="habit-actions-inline">
+          <button class="btn-complete-habit ${isCompleted(habit.id) ? 'completed' : ''}" 
+                  onclick="toggleHabit('${habit.id}')" 
+                  data-habit="${habit.id}">
+            ${isCompleted(habit.id) ? '✓ 已完成' : '⚡ 完成'}
+          </button>
+          <button class="optimize-link" id="optimizeLink_${habit.id}" onclick="toggleOptimizeLink('${habit.id}')">
+            ✨ 优化这个习惯 <span class="optimize-link__arrow">▶</span>
+          </button>
+        </div>
 
         <!-- Inline loop expand (hidden by default) -->
         <div class="loop-expand" id="loopExpand_${habit.id}">
@@ -825,6 +810,9 @@ function toggleHabit(habitId) {
   if (!state.completions[d]) state.completions[d] = [];
   const idx = state.completions[d].indexOf(habitId);
   const wasCompleted = idx >= 0;
+  const habit = state.habits.find(h => h.id === habitId);
+
+  if (!habit) return; // Should not happen
 
   if (wasCompleted) {
     state.completions[d].splice(idx, 1);
@@ -834,10 +822,35 @@ function toggleHabit(habitId) {
     if (MILESTONES.some(m => m.days === newStreak)) {
       celebrateMilestone(newStreak);
     }
+    showCompletionToast(habit.name, habit.reward);
+    animateScore();
   }
 
   saveState();
   renderAll();
+}
+
+// ─── 完成习惯后即时反馈 ───────────────────────────────────────────────────
+function showCompletionToast(habitName, rewardText) {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+
+  toast.textContent = `✅ 完成！${habitName}${rewardText ? ' - ' + rewardText : ''}`;
+  toast.className = 'toast success show';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(function() {
+    toast.classList.remove('show');
+  }, 2000); // Disappear after 2 seconds
+}
+
+function animateScore() {
+  const scoreEl = document.getElementById('dailyScore');
+  if (scoreEl) {
+    scoreEl.classList.add('pop');
+    setTimeout(() => {
+      scoreEl.classList.remove('pop');
+    }, 500);
+  }
 }
 
 // ─── 删除习惯 ────────────────────────────────────────────────────────────
@@ -921,6 +934,36 @@ let toolboxOpen = false;
 function toggleToolbox() {
   const content = document.getElementById('toolboxContent');
   const toggle = document.getElementById('toolboxToggle');
+  var toolboxQuickChips = document.getElementById('toolboxQuickChips');
+  if (toolboxQuickChips) {
+    toolboxQuickChips.addEventListener('click', function(e) {
+      var chip = e.target.closest('.chip-quick');
+      if (!chip) return;
+      var tip = chip.dataset.tip;
+      var answers = {
+        forget: '<strong>我总是忘</strong>：把习惯放到「已有习惯」的后面。比如：<em>洗完脸后 → 读1页书</em>。触发的上下文越具体，越不需要意志力。',
+        procrastinate: '<strong>我总是拖</strong>：用「2分钟规则」。告诉自己"只做2分钟就好"。最难的是开始，一旦开始往往停不下来。',
+        overwhelm: '<strong>我总是开始太大</strong>：把目标缩小到荒谬。小到不可能失败：1个俯卧撑、读1行、走1分钟。然后再慢慢加。'
+      };
+      var answerEl = document.getElementById('toolboxQuickAnswer');
+      if (answerEl) answerEl.innerHTML = answers[tip] || '';
+    });
+  }
+
+  // Hero tip collapsible
+  var heroTipToggle = document.getElementById('heroTipToggle');
+  if (heroTipToggle) {
+    heroTipToggle.addEventListener('click', function() {
+      var body = document.getElementById('heroTipBody');
+      var arrow = document.getElementById('heroTipArrow');
+      var isOpen = body.style.display !== 'none';
+      body.style.display = isOpen ? 'none' : 'block';
+      arrow.textContent = isOpen ? '▶' : '▼';
+      heroTipToggle.setAttribute('aria-expanded', !isOpen);
+    });
+  }
+
+  document.getElementById('toolboxToggle');
   const toggleText = document.getElementById('toolboxToggleText');
   const toggleArrow = document.getElementById('toolboxToggleArrow');
   toolboxOpen = !toolboxOpen;
@@ -1066,7 +1109,35 @@ function setupEventListeners() {
   if (addStkBtn) addStkBtn.addEventListener('click', function() { openModal('stackModal'); });
   var toggleArchBtn = document.getElementById('toggleArchivedBtn');
   if (toggleArchBtn) toggleArchBtn.addEventListener('click', toggleArchived);
-  var toolboxTgl = document.getElementById('toolboxToggle');
+  if (toolboxQuickChips) {
+    toolboxQuickChips.addEventListener('click', function(e) {
+      var chip = e.target.closest('.chip-quick');
+      if (!chip) return;
+      var tip = chip.dataset.tip;
+      var answers = {
+        forget: '<strong>我总是忘</strong>：把习惯放到「已有习惯」的后面。比如：<em>洗完脸后 → 读1页书</em>。触发的上下文越具体，越不需要意志力。',
+        procrastinate: '<strong>我总是拖</strong>：用「2分钟规则」。告诉自己"只做2分钟就好"。最难的是开始，一旦开始往往停不下来。',
+        overwhelm: '<strong>我总是开始太大</strong>：把目标缩小到荒谬。小到不可能失败：1个俯卧撑、读1行、走1分钟。然后再慢慢加。'
+      };
+      var answerEl = document.getElementById('toolboxQuickAnswer');
+      if (answerEl) answerEl.innerHTML = answers[tip] || '';
+    });
+  }
+
+  // Hero tip collapsible
+  var heroTipToggle = document.getElementById('heroTipToggle');
+  if (heroTipToggle) {
+    heroTipToggle.addEventListener('click', function() {
+      var body = document.getElementById('heroTipBody');
+      var arrow = document.getElementById('heroTipArrow');
+      var isOpen = body.style.display !== 'none';
+      body.style.display = isOpen ? 'none' : 'block';
+      arrow.textContent = isOpen ? '▶' : '▼';
+      heroTipToggle.setAttribute('aria-expanded', !isOpen);
+    });
+  }
+
+  document.getElementById('toolboxToggle');
   if (toolboxTgl) toolboxTgl.addEventListener('click', toggleToolbox);
 
   // 弹窗关闭

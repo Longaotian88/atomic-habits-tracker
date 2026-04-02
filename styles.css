@@ -137,6 +137,91 @@ button { cursor: pointer; font-family: var(--font); border: none; background: no
 .header-actions { display: flex; align-items: center; gap: 10px; }
 
 /* =====================
+   Hero Tip (Collapsible)
+   ===================== */
+.hero-tip {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 0;
+}
+
+.hero-tip__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  background: var(--accent-light);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  min-height: 44px;
+}
+
+.hero-tip__toggle:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.hero-tip__toggle .toggle-arrow {
+  font-size: 0.7rem;
+  transition: transform 0.2s ease;
+}
+
+.hero-tip.open .toggle-arrow {
+  transform: rotate(180deg);
+}
+
+.hero-tip__body {
+  padding: 16px 20px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  margin-top: 10px;
+  animation: slideDown 0.2s ease;
+}
+
+.hero-tip__body p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 6px;
+}
+
+.hero-tip__body .cite {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: right;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* =====================
+   今日屏
+   ===================== */
+.section-today {
+  padding: 24px 0;
+}
+
+#habitsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* =====================
+   首屏/复利效应 (已移除)
+   ===================== */
+
+/* =====================
    按钮
    ===================== */
 .btn {
@@ -1446,4 +1531,80 @@ textarea { resize: vertical; min-height: 70px; }
   .rating-dot { width: 32px; height: 32px; font-size: 1rem; }
   .obstacle-chips { gap: 4px; }
   .chip-sm { padding: 3px 8px; font-size: 0.68rem; }
+}
+
+/* ─── Completion Toast ─────────────────────────────── */
+.toast-complete {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--text-primary);
+  color: var(--bg);
+  padding: 10px 20px;
+  border-radius: 24px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.25s, transform 0.25s;
+  z-index: 9999;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+.toast-complete.toast-show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ─── Toolbox quick chips ───────────────────────────── */
+.toolbox-quick-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 6px;
+}
+.chips-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.chip-quick {
+  padding: 5px 12px;
+  border-radius: 16px;
+  border: 1.5px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.chip-quick:hover, .chip-quick.selected {
+  background: var(--accent);
+  color: #fff;
+}
+.toolbox-quick-answer {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  padding: 8px 10px;
+  background: var(--bg);
+  border-radius: var(--radius-xs);
+  line-height: 1.5;
+}
+.toolbox-quick-answer strong { color: var(--text-primary); }
+.toolbox-quick-answer em { color: var(--accent); font-style: normal; }
+
+/* ─── Reflection text rows ─────────────────────────── */
+.reflection-text-row {
+  margin-top: 6px;
+  resize: none;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+/* ─── Scorecard compact header ────────────────────── */
+#todayCount {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-left: 4px;
 }

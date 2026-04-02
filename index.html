@@ -10,251 +10,52 @@
 </head>
 <body>
 
-  <!-- Confetti canvas -->
-  <canvas id="confettiCanvas"></canvas>
-
   <!-- Toast Notification -->
   <div id="toast" class="toast" aria-live="polite"></div>
 
   <!-- Header -->
-
-  <!-- SCORECARD -->
-  <section class="section">
-    <div class="container">
-      <div class="section-header">
-        <h2>📋 今日得分 — <span id="todayDate"></span></h2>
+  <header class="header">
+    <div class="container header-inner">
+      <div class="logo">
+        <span class="logo-icon">⚛️</span>
+        <span class="logo-text">原子习惯</span>
+      </div>
+      <div class="header-actions">
         <div class="score-display">
-          <span id="dailyScore">0</span> / <span id="totalHabits">0</span><div class="empty-hint">还没添加习惯，先添加一个最微小的开始</div>
+          <span id="dailyScore">0</span> / <span id="totalHabits">0</span>
           <span class="score-stars" id="scoreStars"></span>
         </div>
-      </div>
-      <div class="scorecard-grid" id="scorecardGrid"></div>
-    </div>
-  </section>
-
-
-  <!-- HERO -->
-  <section class="hero">
-    <div class="container">
-      <p class="hero-quote-main">"习惯是自我改善的复利。每天进步1%，一年后将提升37倍。"</p>
-      <div class="compound-effect">
-        <div class="compound-left">
-          <div class="compound-label negative">每天差1%</div>
-          <div class="compound-bar negative">
-            <div class="compound-fill negative" id="compoundNegative"></div>
-          </div>
-          <div class="compound-result negative">
-            <span class="big-num" id="negFinal">0.99</span>
-            <span class="big-label">365天后</span>
-          </div>
-          <div class="decline-note">≈ 0.03 → 接近于零 ❄️</div>
-        </div>
-        <div class="compound-vs">VS</div>
-        <div class="compound-right">
-          <div class="compound-label positive">每天好1%</div>
-          <div class="compound-bar positive">
-            <div class="compound-fill positive" id="compoundPositive"></div>
-          </div>
-          <div class="compound-result positive">
-            <span class="big-num" id="posFinal">1.01</span>
-            <span class="big-label">365天后</span>
-          </div>
-          <div class="growth-note">≈ 37.78 → 🌟 37倍增长</div>
-        </div>
-      </div>
-      <p class="hero-quote">"你应该更关心你现在的轨迹，而不是你现在的结果。" — 詹姆斯·克利尔</p>
-    </div>
-  </section>
-
-
-  <!-- DASHBOARD -->
-  <section class="section section-dashboard">
-    <div class="container">
-      <div class="section-header">
-        <h2>📊 本周进度</h2>
-      </div>
-      <div class="dashboard-grid">
-        <div class="dashboard-card dash-progress">
-          <div class="dash-card-title">本周完成率</div>
-          <div class="progress-ring-wrap">
-            <svg class="progress-ring" viewBox="0 0 120 120">
-              <circle class="progress-ring-bg" cx="60" cy="60" r="52"/>
-              <circle class="progress-ring-fill" cx="60" cy="60" r="52" id="progressRing"/>
-            </svg>
-            <div class="progress-ring-text">
-              <span class="progress-pct" id="weeklyPct">0%</span>
-              <span class="progress-sub">本周</span>
-            </div>
-          </div>
-          <div class="weekly-bar-chart" id="weeklyBarChart"></div>
-        </div>
-        <div class="dashboard-card dash-best">
-          <div class="dash-card-title">🏆 本月最佳习惯</div>
-          <div class="best-habit-display" id="bestHabitDisplay">
-            <div class="best-habit-empty">连续完成3次后，这里会显示你的本月最佳习惯</div>
-          </div>
-        </div>
-        <div class="dashboard-card dash-reflect">
-          <div class="dash-card-title">💭 每日反思</div>
-          <div id="reflectionArea">
-            <!-- Mood: 1-5 emoji scale -->
-            <p class="reflect-label">心情</p>
-            <div class="reflect-rating" id="moodRating">
-              <button class="rating-dot" data-val="1" title="很糟">😫</button>
-              <button class="rating-dot" data-val="2" title="不太好">😕</button>
-              <button class="rating-dot" data-val="3" title="一般">😐</button>
-              <button class="rating-dot" data-val="4" title="不错">🙂</button>
-              <button class="rating-dot" data-val="5" title="很棒">😊</button>
-            </div>
-            <!-- Energy: 1-5 scale -->
-            <p class="reflect-label" style="margin-top:10px">精力</p>
-            <div class="reflect-rating" id="energyRating">
-              <button class="rating-dot rating-energy" data-val="1" title="很低">1</button>
-              <button class="rating-dot rating-energy" data-val="2" data-val="2">2</button>
-              <button class="rating-dot rating-energy" data-val="3">3</button>
-              <button class="rating-dot rating-energy" data-val="4">4</button>
-              <button class="rating-dot rating-energy" data-val="5">5</button>
-            </div>
-            <!-- Obstacle chips -->
-            <p class="reflect-label" style="margin-top:10px">今天卡在哪里？（可选）</p>
-            <div class="obstacle-chips" id="obstacleChips">
-              <button type="button" class="chip chip-sm" data-val="太忙">太忙</button>
-              <button type="button" class="chip chip-sm" data-val="忘了">忘了</button>
-              <button type="button" class="chip chip-sm" data-val="没动力">没动力</button>
-              <button type="button" class="chip chip-sm" data-val="环境不对">环境不对</button>
-              <button type="button" class="chip chip-sm" data-val="目标太大">目标太大</button>
-            </div>
-            <!-- Optional text -->
-            <textarea id="reflectionText" class="reflection-input" placeholder="补充一句今天的情况（可选）..." rows="2" style="margin-top:10px"></textarea>
-            <button class="btn btn-secondary btn-sm" id="saveReflectionBtn" style="margin-top:8px">保存反思</button>
-            <div class="reflection-saved" id="reflectionSaved"></div>
-          </div>
-        </div>
+        <button class="btn btn-primary btn-sm" id="addHabitBtnTop">+ 添加习惯</button>
       </div>
     </div>
-  </section>
+  </header>
 
-
-  <!-- TOOLBOX -->
-  <section class="section section-toolbox">
+  <!-- HERO TIP (Collapsible) -->
+  <section class="hero-tip" id="heroTipSection">
     <div class="container">
-      <button class="toolbox-toggle" id="toolboxToggle">
-        <span class="toolbox-toggle__icon">🧰</span>
-        <span class="toolbox-toggle__text" id="toolboxToggleText">展开方法工具箱</span>
-        <span class="toolbox-toggle__arrow" id="toolboxToggleArrow">▼</span>
+      <button class="hero-tip__toggle" id="heroTipToggle">
+        💡 为什么先做最小行动？
+        <span class="toggle-arrow" id="heroTipArrow">▼</span>
       </button>
-      <div class="toolbox-content" id="toolboxContent" style="display:none">
-        <!-- Environment Tip -->
-        <div class="tip-card">
-          <div class="tip-icon">🏠</div>
-          <div class="tip-content">
-            <h3>环境设计</h3>
-            <p><strong>让好习惯显而易见：</strong>把跑鞋放在门口。把书放在枕头上。在办公桌旁放一杯水。</p>
-            <p><strong>让坏习惯看不见：</strong>把手机藏进抽屉。把垃圾食品从桌上拿走。使用网站屏蔽软件。</p>
-          </div>
-        </div>
-
-        <!-- Habit Loop -->
-        <div class="loop-section">
-          <h3>🔄 习惯循环</h3>
-          <p class="section-subtitle">每个习惯都遵循这个循环。识别每个部分，以建立更好的习惯。</p>
-          <div class="loop-diagram">
-            <div class="loop-step">
-              <div class="loop-icon">👁️</div>
-              <div class="loop-name">提示</div>
-              <div class="loop-desc">触发行为的信号</div>
-            </div>
-            <div class="loop-arrow">→</div>
-            <div class="loop-step">
-              <div class="loop-icon">🔥</div>
-              <div class="loop-name">渴望</div>
-              <div class="loop-desc">每个习惯背后的动力</div>
-            </div>
-            <div class="loop-arrow">→</div>
-            <div class="loop-step">
-              <div class="loop-icon">⚡</div>
-              <div class="loop-name">反应</div>
-              <div class="loop-desc">你实际执行的习惯</div>
-            </div>
-            <div class="loop-arrow">→</div>
-            <div class="loop-step">
-              <div class="loop-icon">🎉</div>
-              <div class="loop-name">奖励</div>
-              <div class="loop-desc">你从行动中获得的益处</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tiny Habits Tips -->
-        <div class="tiny-card">
-          <div class="tiny-icon">🐣</div>
-          <div class="tiny-content">
-            <h3>微习惯 — BJ·福格方法</h3>
-            <ul>
-              <li><strong>把它变小：</strong>想运动？做1个俯卧撑。想读书？读1页书。</li>
-              <li><strong>找一个锚点：</strong>把你的新习惯附加到你每天已经在做的事情上。</li>
-              <li><strong>立刻庆祝：</strong>完成后立刻大声说"我做到了！"这会训练你的大脑。</li>
-              <li><strong>自然成长：</strong>当微习惯变得自动化后，再让它稍微大一点。</li>
-            </ul>
-          </div>
-        </div>
-
-        <!-- Motivational Quotes -->
-        <div class="quotes-section">
-          <h3>💡 名言卡片</h3>
-          <div class="quotes-grid" id="quotesGrid"></div>
-        </div>
+      <div class="hero-tip__body" id="heroTipBody" style="display:none">
+        <p>每天 1% 的小进步，比偶尔爆发更可靠。</p>
+        <p class="cite">— James Clear《原子习惯》</p>
       </div>
     </div>
   </section>
 
-
-  <!-- HABITS -->
-  <section class="section">
+  <!-- TODAY HABITS (First Screen) -->
+  <section class="section section-today" id="todayHabitsSection">
     <div class="container">
       <div class="section-header">
-        <h2>🎯 我的习惯</h2>
+        <h2>今天要做 <span id="todayCount"></span></h2>
+        <button class="btn btn-primary btn-sm" id="addHabitBtnTop2">+ 添加习惯</button>
       </div>
-      <div class="habits-list" id="habitsList"></div>
+      <div id="habitsContainer"><!-- 习惯列表 --></div>
     </div>
   </section>
 
-
-  <!-- IDENTITY -->
-  <section class="section">
-    <div class="container">
-      <div class="section-header">
-        <h2>🪪 身份认同习惯</h2>
-        <button class="btn btn-secondary btn-sm" id="addIdentityBtn">+ 添加身份</button>
-      </div>
-      <div class="identity-grid" id="identityGrid"></div>
-    </div>
-  </section>
-
-
-  <!-- STACKING -->
-  <section class="section">
-    <div class="container">
-      <div class="section-header">
-        <h2>🔗 习惯堆叠</h2>
-        <button class="btn btn-secondary btn-sm" id="addStackBtn">+ 添加堆叠</button>
-      </div>
-      <p class="section-subtitle">"在 [现有习惯] 之后，我将 [新习惯]"</p>
-      <div class="stacks-grid" id="stacksGrid"></div>
-    </div>
-  </section>
-
-
-  <!-- ARCHIVED -->
-  <section class="section section-archived" id="archivedSection" style="display:none">
-    <div class="container">
-      <div class="section-header">
-        <h2>📦 已归档习惯</h2>
-        <button class="btn btn-secondary btn-sm" id="toggleArchivedBtn">展开</button>
-      </div>
-      <div class="habits-list" id="archivedList"></div>
-    </div>
-  </section>
+  <!-- SCORECARD Moved to top header -->
 
 
 
